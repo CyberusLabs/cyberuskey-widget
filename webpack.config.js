@@ -4,19 +4,18 @@ const TerserPlugin = require('terser-webpack-plugin');
 module.exports = {
   mode: 'production',
   entry: {
-    'widget': './src/index.js',
-    'widget.min': './src/index.js',
+    'widget': './src/index.ts',
+    'widget.min': './src/index.ts',
   },
-  devtool: 'inline-source-map',
   output: {
-      filename: '[name].js',
-      path: path.resolve(__dirname, 'dist'),
-      libraryTarget: 'umd',
-      library: 'cyberuskey-widget',
-      umdNamedDefine: true
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    libraryTarget: 'umd',
+    library: 'cyberuskey-widget',
+    umdNamedDefine: true
   },
   resolve: {
-      extensions: ['.ts', '.js']
+    extensions: ['.ts', '.js']
   },
   module: {
     rules: [
@@ -36,10 +35,7 @@ module.exports = {
       {
         test: /\.(html)$/,
         use: {
-          loader: 'html-loader',
-          // options: {
-          //   attrs: [':data-src']
-          // }
+          loader: 'html-loader'
         }
       },
     ]
@@ -49,8 +45,7 @@ module.exports = {
     minimizer: [
       new TerserPlugin({
         parallel: true,
-        include:  /\.min\.js$/,
-        // sourceMap: true
+        include: /\.min\.js$/
       })
     ]
   }
