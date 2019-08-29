@@ -1,9 +1,12 @@
 {
-  "name": "cyberus-widget",
+  "name": "cyberuskey-widget",
   "version": "0.0.1",
   "description": "Cyberus Key Widget is a button that help you to integrate with Cyberus Key Authentication Server.",
   "main": "dist/widget.js",
-  "repository": "https://github.com/CyberusLabs/cyberuskey-widget.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyberusLabs/cyberuskey-widget.git"
+  },
   "author": "Cyberus Labs",
   "license": "MIT",
   "scripts": {
@@ -27,5 +30,15 @@
     "typescript": "^3.5.3",
     "webpack": "^4.39.3",
     "webpack-cli": "^3.3.7"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/CyberusLabs/cyberuskey-widget/issues"
+  },
+  "homepage": "https://github.com/CyberusLabs/cyberuskey-widget#readme",
+  "keywords": [
+    "cyberuslabs",
+    "cyberuskey",
+    "cyberuskey-widget",
+    "cyberus-widget"
+  ]
 }

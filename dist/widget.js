@@ -405,7 +405,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __webpack_require__(4);
-// import $ from 'cash-dom';
 const cyberuskey_sdk_1 = __webpack_require__(8);
 const $ = __webpack_require__(12);
 const widgetTemplate = __webpack_require__(13);
