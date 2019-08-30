@@ -91,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -119,6 +119,12 @@ class CyberusKeyError extends Error {
     constructor(code, message) {
         super(message);
         this._code = ErrorCode[code];
+    }
+    get code() {
+        return ErrorCode[this._code];
+    }
+    get description() {
+        return this.message;
     }
 }
 exports.CyberusKeyError = CyberusKeyError;
@@ -183,6 +189,28 @@ exports.errorFactory = errorFactory;
 
 "use strict";
 
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(2));
+__export(__webpack_require__(10));
+__export(__webpack_require__(0));
+__export(__webpack_require__(11));
+__export(__webpack_require__(12));
+__export(__webpack_require__(3));
+__export(__webpack_require__(4));
+__export(__webpack_require__(13));
+const api_1 = __webpack_require__(2);
+exports.default = api_1.CyberusKeyAPI;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -193,7 +221,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const errors_1 = __webpack_require__(0);
-const session_1 = __webpack_require__(2);
+const session_1 = __webpack_require__(3);
 let createSessionLastTimestamp = null;
 /**
  * Cyberus Key API which allows you to do a delegate login with OpenId protocol.
@@ -206,24 +234,29 @@ class CyberusKeyAPI {
      * @param {string} hostUrl Base URL of the host server, e.g. `https://auth-server-demo.cyberuslabs.net`
      * @memberof CyberusKeyAPI
      */
-    constructor(hostUrl) {
+    constructor(hostUrl, geoProvider) {
         this._apiUrl = new URL('/api/v2/', hostUrl);
+        this._geoProvider = geoProvider;
     }
     /**
      * Creates the Cyberus Key session.
      *
      * @param {string} clientId Public client ID generated during creating the account.
-     * @param {boolean} [useGeolocation=false] Set `true` if you want to pass optional geolocation measurements.
-     *    They can be later use to compare them against the mobile's measurements (if you have set `fail_on_geo_mismatch`).
+     * @param {Geolocation} [geo] Give a value if you want to pass optional geolocation measurement.
+     *    It can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
      *    Those measurements can be used also to general improvement of the security.
      * @throws WrongJsonError, OpenApiError, ResourceNotFoundError, OTPGenerationError, UnknownError
      * @returns {Promise<Session>} The Cyberus Key session.
      * @memberof CyberusKeyAPI
      */
-    createSession(clientId, useGeolocation = false) {
+    createSession(clientId, geo) {
         return __awaiter(this, void 0, void 0, function* () {
             this._raiseWhenCalledTooManyTimes(createSessionLastTimestamp);
             const data = { client_id: clientId };
+            if (geo) {
+                data['lat'] = geo.latitude;
+                data['lng'] = geo.longitude;
+            }
             const response = yield fetch(this._getUrl('sessions'), {
                 method: 'POST',
                 body: this._getUrlEncodedBody(data),
@@ -326,7 +359,10 @@ class CyberusKeyAPI {
      */
     authenticate(clientId, redirectUri, scope, soundEmitter, navigator, state, nonce) {
         return __awaiter(this, void 0, void 0, function* () {
-            const session = yield this.createSession(clientId);
+            if (this._geoProvider && !this._cachedGeo) {
+                this._cachedGeo = yield this._geoProvider.getGeo();
+            }
+            const session = yield this.createSession(clientId, this._cachedGeo);
             const sound = yield this.getOTPSound(session);
             const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce);
             console.info(`Navigating to ${authenticateUrl}.`);
@@ -368,7 +404,7 @@ exports.CyberusKeyAPI = CyberusKeyAPI;
 //# sourceMappingURL=api.js.map
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -390,7 +426,33 @@ exports.Session = Session;
 //# sourceMappingURL=session.js.map
 
 /***/ }),
-/* 3 */
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Geolocation {
+    constructor(latitude, longitude, accuracy) {
+        this._latitude = latitude;
+        this._longitude = longitude;
+        this._accuracy = accuracy;
+    }
+    get latitude() {
+        return this._latitude;
+    }
+    get longitude() {
+        return this._longitude;
+    }
+    get accuracy() {
+        return this._accuracy;
+    }
+}
+exports.Geolocation = Geolocation;
+//# sourceMappingURL=geo.js.map
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -403,15 +465,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(4);
-const cyberuskey_sdk_1 = __webpack_require__(8);
-const $ = __webpack_require__(12);
-const widgetTemplate = __webpack_require__(13);
+__webpack_require__(6);
+const cyberuskey_sdk_1 = __webpack_require__(1);
+const $ = __webpack_require__(14);
+const widgetTemplate = __webpack_require__(15);
 const widgetImages = {
     'default': 'img/cyberus/cyberus_login_widget.png',
     'eliot': 'img/eliot/eliot_login_widget_button.png'
 };
+__export(__webpack_require__(1));
+/**
+ * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
+ *
+ *
+ * Example:
+ *
+ * ```javascript
+ * import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
+ *
+ * $(document).ready(() => {
+ *  const cyberusKeyButton = new CyberusKeyWidget('default', API_URL);
+ *  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+ * });
+ * ```
+ *
+ * @export
+ * @class CyberusKeyWidget
+ */
 class CyberusKeyWidget {
     /**
      * Creates an instance of CyberusKeyWidget.
@@ -435,6 +519,9 @@ class CyberusKeyWidget {
      * @param {string} containingElementSelector Selector of a containing DOM element for the button.
      * @param {string} clientId Public client ID generated during creating the account.
      * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
+     * @param {GeoProvider} [geoProvider] Provider of a geolocalization. For a web browser use HTML5GeoProvider.
+     *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
+     *    Those measurements can be used also to general improvement of the security.
      * @param {string} [state]
      *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
      *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
@@ -446,12 +533,13 @@ class CyberusKeyWidget {
      *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
      * @memberof CyberusKeyWidget
      */
-    create(containingElementSelector, clientId, redirectUri, state, nonce) {
+    create(containingElementSelector, clientId, redirectUri, geoProvider, state, nonce) {
         if (this._initialized) {
             throw new Error(`Widget is already initialized.`);
         }
         this._clientId = clientId;
         this._redirectUri = redirectUri;
+        this._geoProvider = geoProvider;
         this._state = state;
         this._nonce = nonce;
         const widgetHtml = widgetTemplate
@@ -467,9 +555,15 @@ class CyberusKeyWidget {
                 return Promise.resolve();
             }
             this._inProgress = true;
-            const api = new cyberuskey_sdk_1.CyberusKeyAPI(this._serverUrl.href);
+            const api = new cyberuskey_sdk_1.CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
             const scope = (new cyberuskey_sdk_1.OpenIdScopeParser()).addEmail().addProfile();
-            yield api.authenticate(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.WebAudioSoundEmitter(), new cyberuskey_sdk_1.RedirectNavigator());
+            try {
+                yield api.authenticate(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.WebAudioSoundEmitter(), new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce);
+            }
+            catch (error) {
+                this._inProgress = false;
+                throw error;
+            }
         });
     }
     _getUrl(path) {
@@ -480,10 +574,10 @@ exports.CyberusKeyWidget = CyberusKeyWidget;
 
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var content = __webpack_require__(5);
+var content = __webpack_require__(7);
 
 if (typeof content === 'string') {
   content = [[module.i, content, '']];
@@ -494,7 +588,7 @@ var options = {}
 options.insert = "head";
 options.singleton = false;
 
-var update = __webpack_require__(7)(content, options);
+var update = __webpack_require__(9)(content, options);
 
 if (content.locals) {
   module.exports = content.locals;
@@ -502,16 +596,16 @@ if (content.locals) {
 
 
 /***/ }),
-/* 5 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(6)(false);
+exports = module.exports = __webpack_require__(8)(false);
 // Module
 exports.push([module.i, ".cyberus-key-widget{position:relative}.cyberus-key-widget .login-button{flex:1 1 auto;padding:0px;border-style:none;outline:none;cursor:pointer;background-color:transparent;text-align:center}.cyberus-key-widget .login-button img{max-width:500px}.cyberus-key-widget .lost-phone{flex:0 0 auto;margin-top:3px;text-align:center;color:#7e8aac;font-size:18px;font-weight:400;letter-spacing:-0.32px;line-height:52.8px}\n", ""]);
 
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -607,7 +701,7 @@ function toComment(sourceMap) {
 }
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -895,27 +989,7 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(1));
-__export(__webpack_require__(9));
-__export(__webpack_require__(0));
-__export(__webpack_require__(10));
-__export(__webpack_require__(11));
-__export(__webpack_require__(2));
-const api_1 = __webpack_require__(1);
-exports.default = api_1.CyberusKeyAPI;
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -955,7 +1029,7 @@ exports.WebAudioSoundEmitter = WebAudioSoundEmitter;
 //# sourceMappingURL=webAudioSoundEmitter.js.map
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -985,7 +1059,7 @@ exports.RedirectNavigator = RedirectNavigator;
 //# sourceMappingURL=redirectNavigator.js.map
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1017,7 +1091,39 @@ exports.OpenIdScopeParser = OpenIdScopeParser;
 //# sourceMappingURL=scopeParser.js.map
 
 /***/ }),
-/* 12 */
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const geo_1 = __webpack_require__(4);
+class HTML5GeoProvider {
+    getGeo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { coords } = yield this._getGeo();
+            return new geo_1.Geolocation(coords.latitude, coords.longitude, coords.accuracy);
+        });
+    }
+    _getGeo() {
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+        });
+    }
+}
+exports.HTML5GeoProvider = HTML5GeoProvider;
+//# sourceMappingURL=html5GeoProvider.js.map
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* MIT https://github.com/kenwheeler/cash */
@@ -2305,7 +2411,7 @@ if (true) {
 })();
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = "<div class=\"cyberus-key-widget\"></div>\n\n<div class=\"cyberus-key-widget\">\n  <button class=\"login-button\">\n    <img src=\"{{widgetImageUrl}}\" alt=\"Click to log in\" />\n  </button>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"#\" target=\"_parent\">Lock now</a>\n  </div>\n</div>";
