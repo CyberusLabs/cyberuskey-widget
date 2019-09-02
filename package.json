@@ -1,6 +1,6 @@
 {
   "name": "cyberuskey-widget",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Cyberus Key Widget is a button that help you to integrate with Cyberus Key Authentication Server.",
   "main": "dist/widget.js",
   "repository": {
