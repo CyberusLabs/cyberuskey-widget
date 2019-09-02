@@ -1,9 +1,16 @@
-<div class="cyberus-key-widget"></div>
+<div class="cyberuskey-widget">
+  <div class="login-button-container">
+      <div class="lds-ripple {{theme}}"><div></div><div></div></div>
+      <div class="lds-ring {{theme}}"><div></div><div></div><div></div><div></div></div>
 
-<div class="cyberus-key-widget">
-  <button class="login-button">
-    <img src="{{widgetImageUrl}}" alt="Click to log in" />
-  </button>
+      <div class="login-button {{theme}}">
+          <div class="login-button-icon"></div>
+          <div class="login-button-vl"></div>
+          <div class="login-button-text-container">
+            <span class="login-buton-text">{{loginText}}</span>
+          </div>
+      </div>
+  </div>
 
   <div class="lost-phone">
     Lost your phone? <a class='lock-now-link' href="#" target="_parent">Lock now</a>

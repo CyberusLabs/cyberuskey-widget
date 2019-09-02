@@ -1,30 +1,99 @@
 @import './colors';
 
-.cyberus-key-widget {
+.cyberuskey-widget {
+  @import './loader';
+  @import './blinking';
+  @import './waves';
+
   position: relative;
+  max-width: 480px;
 
-	.login-button {
-		flex: 1 1 auto;
-		padding: 0px;
-		border-style: none;
-		outline: none;
-		cursor: pointer;
-		background-color: transparent;
-		text-align: center;
-
-		img {
-      max-width: 500px;
-		}
+  .login-button-container {
+    position: relative;
   }
   
-	.lost-phone {
-		flex: 0 0 auto;
-		margin-top: 3px;
-		text-align: center;
-		color: $text-color;
-		font-size: 18px;
-		font-weight: 400;
-		letter-spacing: -0.32px;
-		line-height: 52.8px;
-	}
+  .login-button {
+    display: flex;
+    height: 66px;
+    background: $button-left-color;
+    border-radius: 6px;
+    transition: opacity .25s ease-in-out;
+    cursor: pointer;
+
+    .login-button-icon {
+      position: relative;
+      flex: 0 0 80px;
+      max-width: 80px;
+    }
+
+    .login-button-text-container {
+      display: flex;
+      flex: 1 1 400px;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    &.blinking {
+      cursor: not-allowed;
+    }
+
+    &.disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    &.default {
+      background: linear-gradient(to right, $button-left-color, $button-right-color 100%);
+      min-width: 310px;
+
+      .login-button-icon {
+        background: no-repeat center url('../img/button-default.svg');
+        background-size: 75%;
+      }
+      
+      .login-buton-text {
+        color: white;
+        font-size: 1.4em;
+      }
+
+      .login-button-vl {
+        border-left: 1px solid $button-separator-color;
+        height: 100%;
+      }
+    }
+
+   &.eliot {
+      background: linear-gradient(180deg, $button-eliot-left-color, $button-eliot-right-color 100%);
+      max-width: 465px;
+      min-width: 360px;
+      height: 80px;
+
+      .login-button-icon {
+        background: no-repeat center url('../img/button-eliot.svg');
+        background-size: 75%;
+      }
+      
+      .login-buton-text {
+        color: white;
+        font-size: 1.7em;
+      }
+
+      .login-button-vl {
+        border-left: 1px solid $button-eliot-separator-color;
+        height: 100%;
+      }
+    }
+  }
+  
+  .lost-phone {
+    flex: 0 0 auto;
+    margin-top: 16px;
+    text-align: center;
+    color: $text-color;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: -0.32px;
+    line-height: 52.8px;
+  }
 }
