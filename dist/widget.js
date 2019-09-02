@@ -194,13 +194,13 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(__webpack_require__(2));
-__export(__webpack_require__(10));
+__export(__webpack_require__(6));
 __export(__webpack_require__(0));
-__export(__webpack_require__(11));
-__export(__webpack_require__(12));
+__export(__webpack_require__(7));
+__export(__webpack_require__(8));
 __export(__webpack_require__(3));
 __export(__webpack_require__(4));
-__export(__webpack_require__(13));
+__export(__webpack_require__(9));
 const api_1 = __webpack_require__(2);
 exports.default = api_1.CyberusKeyAPI;
 //# sourceMappingURL=index.js.map
@@ -222,7 +222,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const errors_1 = __webpack_require__(0);
 const session_1 = __webpack_require__(3);
-let createSessionLastTimestamp = null;
 /**
  * Cyberus Key API which allows you to do a delegate login with OpenId protocol.
  *
@@ -232,11 +231,13 @@ class CyberusKeyAPI {
     /**
      * Creates an instance of CyberusKeyAPI.
      * @param {string} hostUrl Base URL of the host server, e.g. `https://auth-server-demo.cyberuslabs.net`
+     * @param {number} [delayMs=600] Delay (ms) between making an Authentication request and a sound playing.
      * @memberof CyberusKeyAPI
      */
-    constructor(hostUrl, geoProvider) {
+    constructor(hostUrl, geoProvider, delayMs = 600) {
         this._apiUrl = new URL('/api/v2/', hostUrl);
         this._geoProvider = geoProvider;
+        this._delayMs = delayMs;
     }
     /**
      * Creates the Cyberus Key session.
@@ -251,7 +252,6 @@ class CyberusKeyAPI {
      */
     createSession(clientId, geo) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._raiseWhenCalledTooManyTimes(createSessionLastTimestamp);
             const data = { client_id: clientId };
             if (geo) {
                 data['lat'] = geo.latitude;
@@ -265,7 +265,6 @@ class CyberusKeyAPI {
                 }
             });
             const json = yield response.json();
-            createSessionLastTimestamp = this._timestamp();
             if (response.ok && response.status === 201 && json.success) {
                 return new session_1.Session(json.data);
             }
@@ -355,6 +354,7 @@ class CyberusKeyAPI {
      *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
      *    The value is passed through unmodified from the Authentication Request to the ID Token.
      *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     * @returns {Promise<void>}
      * @memberof CyberusKeyAPI
      */
     authenticate(clientId, redirectUri, scope, soundEmitter, navigator, state, nonce) {
@@ -372,19 +372,42 @@ class CyberusKeyAPI {
             yield soundEmitter.emit(sound);
         });
     }
+    /**
+     * Navigates to Authentication Endpoint and returns a sound. You have to emit it.
+     *
+     * @param {string} clientId Public client ID generated during creating the account.
+     * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
+     * @param {OpenIdScopeParser} scope Each scope returns a set of user attributes, which are called claims.
+     *    Once the user authorizes the requested scopes, the claims are returned in an ID Token.
+     * @param {Navigator} navigator Class describes an action that will be done to Authentication URL. For browsers it will be a page redirection.
+     * @param {string} [state]
+     *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
+     *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
+     *    It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
+     *    The state parameter is a string so you can encode any other information in it.
+     * @param {string} [nonce]
+     *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+     *    The value is passed through unmodified from the Authentication Request to the ID Token.
+     *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     * @returns {Promise<void>}
+     * @memberof CyberusKeyAPI
+     */
+    navigateAndGetTheSound(clientId, redirectUri, scope, navigator, state, nonce) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._geoProvider && !this._cachedGeo) {
+                this._cachedGeo = yield this._geoProvider.getGeo();
+            }
+            const session = yield this.createSession(clientId, this._cachedGeo);
+            const sound = yield this.getOTPSound(session);
+            const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce);
+            console.info(`Navigating to ${authenticateUrl}.`);
+            yield navigator.navigate(authenticateUrl);
+            yield this._timeout(this._delayMs);
+            return sound;
+        });
+    }
     _getUrl(path) {
         return (new URL(path, this._apiUrl)).href;
-    }
-    _timestamp() {
-        return (new Date()).getTime();
-    }
-    _raiseWhenCalledTooManyTimes(lastTimestamp) {
-        if (!lastTimestamp) {
-            return;
-        }
-        if (this._timestamp() - lastTimestamp < 1000 * 10) {
-            throw new errors_1.TooManyCallsError();
-        }
     }
     _getUrlEncodedBody(data) {
         return Object.keys(data).reduce((result, key) => {
@@ -432,18 +455,45 @@ exports.Session = Session;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * An abstraction for a taken geolocation measurement.
+ *
+ * @export
+ * @class Geolocation
+ */
 class Geolocation {
     constructor(latitude, longitude, accuracy) {
         this._latitude = latitude;
         this._longitude = longitude;
         this._accuracy = accuracy;
     }
+    /**
+     * Get a latitude.
+     *
+     * @readonly
+     * @type {number}
+     * @memberof Geolocation
+     */
     get latitude() {
         return this._latitude;
     }
+    /**
+     * Gets a longitude.
+     *
+     * @readonly
+     * @type {number}
+     * @memberof Geolocation
+     */
     get longitude() {
         return this._longitude;
     }
+    /**
+     * Gets an accuracy of a measurement.
+     *
+     * @readonly
+     * @type {number}
+     * @memberof Geolocation
+     */
     get accuracy() {
         return this._accuracy;
     }
@@ -469,15 +519,27 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(6);
 const cyberuskey_sdk_1 = __webpack_require__(1);
-const $ = __webpack_require__(14);
-const widgetTemplate = __webpack_require__(15);
+__webpack_require__(10);
+const $ = __webpack_require__(17);
+const widgetTemplate = __webpack_require__(18);
 const widgetImages = {
     'default': 'img/cyberus/cyberus_login_widget.png',
     'eliot': 'img/eliot/eliot_login_widget_button.png'
 };
 __export(__webpack_require__(1));
+/**
+ * Defines the widget animation.
+ *
+ * @export
+ * @enum {number}
+ */
+var WidgetAnimation;
+(function (WidgetAnimation) {
+    WidgetAnimation[WidgetAnimation["None"] = 0] = "None";
+    WidgetAnimation[WidgetAnimation["Blinking"] = 1] = "Blinking";
+    WidgetAnimation[WidgetAnimation["Waves"] = 2] = "Waves";
+})(WidgetAnimation = exports.WidgetAnimation || (exports.WidgetAnimation = {}));
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
  *
@@ -488,8 +550,12 @@ __export(__webpack_require__(1));
  * import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
  *
  * $(document).ready(() => {
- *  const cyberusKeyButton = new CyberusKeyWidget('default', API_URL);
- *  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+ *   const cyberusKeyButton = new CyberusKeyWidget({
+ *     theme: 'default',
+ *     serverUrl: API_URL
+ *   };
+ *
+ *   cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
  * });
  * ```
  *
@@ -500,16 +566,19 @@ class CyberusKeyWidget {
     /**
      * Creates an instance of CyberusKeyWidget.
      *
-     * @param {string} [theme='default'] A theme of the button.
-     * @param {string} [serverUrl='https://auth-server-demo.cyberuslabs.net'] Cyberus Key Authentication server URL.
+     * @param {WidgetOptions} [options={}] Widget options.
      * @memberof CyberusKeyWidget
      */
-    constructor(theme = 'default', serverUrl = 'https://auth-server-demo.cyberuslabs.net') {
+    constructor(options = {}) {
+        const theme = options.theme || 'default';
+        const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
+        const animation = options.animation || WidgetAnimation.Blinking;
         if (!Object.keys(widgetImages).includes(theme)) {
             throw new Error(`Theme "${theme}" is not supported.`);
         }
         this._serverUrl = new URL(serverUrl);
         this._theme = theme;
+        this._animation = animation;
         this._initialized = false;
         this._inProgress = false;
     }
@@ -519,7 +588,8 @@ class CyberusKeyWidget {
      * @param {string} containingElementSelector Selector of a containing DOM element for the button.
      * @param {string} clientId Public client ID generated during creating the account.
      * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
-     * @param {GeoProvider} [geoProvider] Provider of a geolocalization. For a web browser use HTML5GeoProvider.
+     * @param {GeoProvider} [geoProvider] Provider of a geolocalization. `If passed, then geolocalization measurement will be taken`.
+     *    For a web browser use HTML5GeoProvider.
      *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
      *    Those measurements can be used also to general improvement of the security.
      * @param {string} [state]
@@ -542,11 +612,13 @@ class CyberusKeyWidget {
         this._geoProvider = geoProvider;
         this._state = state;
         this._nonce = nonce;
+        this._containingElementSelector = containingElementSelector;
+        const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
         const widgetHtml = widgetTemplate
-            .replace('{{widgetImageUrl}}', this._getUrl(widgetImages[this._theme]));
-        $(widgetHtml)
-            .appendTo(containingElementSelector)
-            .on('click', this._loginButtonClick.bind(this));
+            .replace(/{{theme}}/g, this._theme)
+            .replace(/{{loginText}}/g, buttonText);
+        $(widgetHtml).appendTo(containingElementSelector);
+        $(this._getElement('.login-button-container .login-button')).on('click', this._loginButtonClick.bind(this));
         this._initialized = true;
     }
     _loginButtonClick() {
@@ -557,17 +629,72 @@ class CyberusKeyWidget {
             this._inProgress = true;
             const api = new cyberuskey_sdk_1.CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
             const scope = (new cyberuskey_sdk_1.OpenIdScopeParser()).addEmail().addProfile();
+            const soundEmitter = new cyberuskey_sdk_1.WebAudioSoundEmitter();
+            this._loading();
             try {
-                yield api.authenticate(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.WebAudioSoundEmitter(), new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce);
+                const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce);
+                this._noLoading();
+                this._animate();
+                yield soundEmitter.emit(sound);
             }
             catch (error) {
+                this._stopBlinking();
                 this._inProgress = false;
                 throw error;
+            }
+            finally {
+                this._stopAnimation();
+                this._loading();
             }
         });
     }
     _getUrl(path) {
         return (new URL(path, this._serverUrl)).href;
+    }
+    _getElement(selector) {
+        return $(`${this._containingElementSelector} ${selector}`);
+    }
+    _loading() {
+        this._getElement('.lds-ring').addClass('enabled');
+        this._disable();
+    }
+    _noLoading() {
+        this._enable();
+        this._getElement('.lds-ring').removeClass('enabled');
+    }
+    _disable() {
+        this._getElement('.login-button').addClass('disabled');
+    }
+    _enable() {
+        this._getElement('.login-button').removeClass('disabled');
+    }
+    _blink() {
+        this._getElement('.login-button').addClass('blinking');
+    }
+    _stopBlinking() {
+        this._getElement('.login-button').removeClass('blinking');
+    }
+    _waves() {
+        this._getElement('.lds-ripple').addClass('enabled');
+    }
+    _stopWaves() {
+        this._getElement('.lds-ripple').removeClass('enabled');
+    }
+    _animate() {
+        if (this._animation === WidgetAnimation.Blinking) {
+            this._blink();
+        }
+        else if (this._animation === WidgetAnimation.Waves) {
+            this._waves();
+        }
+    }
+    _stopAnimation() {
+        if (this._animation === WidgetAnimation.Blinking) {
+            this._stopBlinking();
+        }
+        else if (this._animation === WidgetAnimation.Waves) {
+            this._stopWaves();
+        }
     }
 }
 exports.CyberusKeyWidget = CyberusKeyWidget;
@@ -577,7 +704,220 @@ exports.CyberusKeyWidget = CyberusKeyWidget;
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var content = __webpack_require__(7);
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Class uses a HTML5's AudioContext interface to play a sound.
+ *
+ * @export
+ * @class WebAudioSoundEmitter
+ * @implements {SoundEmitter}
+ */
+class WebAudioSoundEmitter {
+    /**
+     * Emits a sound through HTML5's AudioContext interface.
+     *
+     * @param {ArrayBuffer} sound A binary record of the sound you want to play.
+     * @returns {Promise<void>}
+     * @memberof WebAudioSoundEmitter
+     */
+    emit(sound) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let context;
+            try {
+                context = new AudioContext();
+            }
+            catch (e) {
+                console.error('AudioContext is not supported.');
+                throw e;
+            }
+            const audioBuffer = yield context.decodeAudioData(sound);
+            const source = context.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(context.destination);
+            yield (new Promise((resolve) => {
+                source.onended = resolve;
+                source.start(0);
+            }));
+        });
+    }
+}
+exports.WebAudioSoundEmitter = WebAudioSoundEmitter;
+//# sourceMappingURL=webAudioSoundEmitter.js.map
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const errors_1 = __webpack_require__(0);
+/**
+ * Class describes how OpenID's Authentication Endpoint will be handled.
+ * This class is thighten to a default browser behaviour for OpenID protocol - a redirection.
+ * Which means that your URL will be temporarily replaced by the Authentication Endpoint
+ * and replaced again by its response - HTTP 302. The new location will be the one you defined as your `redirect_uri`.
+ *
+ * @export
+ * @class RedirectNavigator
+ * @implements {Navigator}
+ */
+class RedirectNavigator {
+    /**
+     * Navigates to the given URL.
+     *
+     * @param {string} url Authentication Endpoint URL.
+     * @throws MissingRedirectUri
+     * @returns {Promise<void>}
+     * @memberof RedirectNavigator
+     */
+    navigate(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!url) {
+                throw new errors_1.MissingRedirectUri();
+            }
+            window.location.href = url;
+            return Promise.resolve();
+        });
+    }
+}
+exports.RedirectNavigator = RedirectNavigator;
+//# sourceMappingURL=redirectNavigator.js.map
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Handy class to define an OpenID's scope.
+ * Scopes are used by an application during authentication to authorize access to a user's details,
+ * like name and picture. Each scope returns a set of user attributes, which are called claims.
+ *
+ * You can use additional values `email` (add a user's email claim) and `profile` (add user first and last name).
+ *
+ * ```javascript
+ * const scopeParser = new OpenIdScopeParser();
+ * const scope = scopeParser.addEmail().addProfile().getValue();
+ * ```
+ *
+ * @export
+ * @class OpenIdScopeParser
+ */
+class OpenIdScopeParser {
+    constructor() {
+        this._scope = ['openid'];
+    }
+    /**
+     * Adds `email` scope.
+     *
+     * @returns {this}
+     * @memberof OpenIdScopeParser
+     */
+    addEmail() {
+        if (this._scope.includes('email')) {
+            return this;
+        }
+        this._scope.push('email');
+        return this;
+    }
+    /**
+     * Adds `profile` scope.
+     *
+     * @returns {this}
+     * @memberof OpenIdScopeParser
+     */
+    addProfile() {
+        if (this._scope.includes('profile')) {
+            return this;
+        }
+        this._scope.push('profile');
+        return this;
+    }
+    /**
+     * Gets formatted scope value, e.g. `openid email`.
+     *
+     * @returns {string}
+     * @memberof OpenIdScopeParser
+     */
+    getValue() {
+        return this._scope.join(' ');
+    }
+}
+exports.OpenIdScopeParser = OpenIdScopeParser;
+//# sourceMappingURL=scopeParser.js.map
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const geo_1 = __webpack_require__(4);
+/**
+ * Class provides a geolocalization measurement.
+ * It uses a HTML5's `Geolocation.getCurrentPosition()` method.
+ *
+ * @export
+ * @class HTML5GeoProvider
+ * @implements {GeoProvider}
+ */
+class HTML5GeoProvider {
+    /**
+     * Gets a geolocalization measurement.
+     *
+     * @returns {Promise<Geolocation>} Geolocalization measurement.
+     * @memberof HTML5GeoProvider
+     */
+    getGeo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { coords } = yield this._getGeo();
+            return new geo_1.Geolocation(coords.latitude, coords.longitude, coords.accuracy);
+        });
+    }
+    _getGeo() {
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+        });
+    }
+}
+exports.HTML5GeoProvider = HTML5GeoProvider;
+//# sourceMappingURL=html5GeoProvider.js.map
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var content = __webpack_require__(11);
 
 if (typeof content === 'string') {
   content = [[module.i, content, '']];
@@ -588,7 +928,7 @@ var options = {}
 options.insert = "head";
 options.singleton = false;
 
-var update = __webpack_require__(9)(content, options);
+var update = __webpack_require__(16)(content, options);
 
 if (content.locals) {
   module.exports = content.locals;
@@ -596,16 +936,20 @@ if (content.locals) {
 
 
 /***/ }),
-/* 7 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(8)(false);
+exports = module.exports = __webpack_require__(12)(false);
+// Imports
+var getUrl = __webpack_require__(13);
+var ___CSS_LOADER_URL___0___ = getUrl(__webpack_require__(14));
+var ___CSS_LOADER_URL___1___ = getUrl(__webpack_require__(15));
 // Module
-exports.push([module.i, ".cyberus-key-widget{position:relative}.cyberus-key-widget .login-button{flex:1 1 auto;padding:0px;border-style:none;outline:none;cursor:pointer;background-color:transparent;text-align:center}.cyberus-key-widget .login-button img{max-width:500px}.cyberus-key-widget .lost-phone{flex:0 0 auto;margin-top:3px;text-align:center;color:#7e8aac;font-size:18px;font-weight:400;letter-spacing:-0.32px;line-height:52.8px}\n", ""]);
+exports.push([module.i, ".cyberuskey-widget{position:relative;max-width:480px}.cyberuskey-widget .lds-ring{position:absolute;display:none;left:calc(50% - 32px);width:64px;height:64px}.cyberuskey-widget .lds-ring.enabled{display:block}.cyberuskey-widget .lds-ring.default{top:2px}.cyberuskey-widget .lds-ring.eliot{top:10px}.cyberuskey-widget .lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #ababab;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:#ababab transparent transparent transparent}.cyberuskey-widget .lds-ring div:nth-child(1){animation-delay:-0.45s}.cyberuskey-widget .lds-ring div:nth-child(2){animation-delay:-0.3s}.cyberuskey-widget .lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.cyberuskey-widget .blinking{animation:blinking 0.8s infinite}@keyframes blinking{0%{opacity:1}50%{opacity:.6}100%{opacity:1}}.cyberuskey-widget .lds-ripple{position:absolute;display:none;width:130px;height:130px}.cyberuskey-widget .lds-ripple.default{top:-26px;left:-21px}.cyberuskey-widget .lds-ripple.eliot{top:-21px;left:-21px}.cyberuskey-widget .lds-ripple.enabled{display:block}.cyberuskey-widget .lds-ripple div{position:absolute;border:6px solid #ababab;opacity:1;border-radius:50%;animation:lds-ripple 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite}.cyberuskey-widget .lds-ripple div:nth-child(2){animation-delay:-0.5s}@keyframes lds-ripple{0%{top:64px;left:64px;width:0;height:0;opacity:1}100%{top:-1px;left:-1px;width:130px;height:130px;opacity:0}}.cyberuskey-widget .login-button-container{position:relative}.cyberuskey-widget .login-button{display:flex;height:66px;background:#eb5e18;border-radius:6px;transition:opacity .25s ease-in-out;cursor:pointer}.cyberuskey-widget .login-button .login-button-icon{position:relative;flex:0 0 80px;max-width:80px}.cyberuskey-widget .login-button .login-button-text-container{display:flex;flex:1 1 400px;align-items:center;justify-content:center;user-select:none}.cyberuskey-widget .login-button.blinking{cursor:not-allowed}.cyberuskey-widget .login-button.disabled{opacity:.6;cursor:not-allowed}.cyberuskey-widget .login-button.default{background:linear-gradient(to right, #eb5e18, #ef7d46 100%);min-width:310px}.cyberuskey-widget .login-button.default .login-button-icon{background:no-repeat center url(" + ___CSS_LOADER_URL___0___ + ");background-size:75%}.cyberuskey-widget .login-button.default .login-buton-text{color:white;font-size:1.4em}.cyberuskey-widget .login-button.default .login-button-vl{border-left:1px solid #f18c5a;height:100%}.cyberuskey-widget .login-button.eliot{background:linear-gradient(180deg, #1490FB, #0754B6 100%);max-width:465px;min-width:360px;height:80px}.cyberuskey-widget .login-button.eliot .login-button-icon{background:no-repeat center url(" + ___CSS_LOADER_URL___1___ + ");background-size:75%}.cyberuskey-widget .login-button.eliot .login-buton-text{color:white;font-size:1.7em}.cyberuskey-widget .login-button.eliot .login-button-vl{border-left:1px solid #3897EF;height:100%}.cyberuskey-widget .lost-phone{flex:0 0 auto;margin-top:16px;text-align:center;color:#7e8aac;font-size:18px;font-weight:400;letter-spacing:-0.32px;line-height:52.8px}\n", ""]);
 
 
 /***/ }),
-/* 8 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -701,7 +1045,49 @@ function toComment(sourceMap) {
 }
 
 /***/ }),
-/* 9 */
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = function (url, needQuotes) {
+  // eslint-disable-next-line no-underscore-dangle, no-param-reassign
+  url = url.__esModule ? url.default : url;
+
+  if (typeof url !== 'string') {
+    return url;
+  } // If url is already wrapped in quotes, remove them
+
+
+  if (/^['"].*['"]$/.test(url)) {
+    // eslint-disable-next-line no-param-reassign
+    url = url.slice(1, -1);
+  } // Should url be wrapped?
+  // See https://drafts.csswg.org/css-values-3/#urls
+
+
+  if (/["'() \t\n]/.test(url) || needQuotes) {
+    return "\"".concat(url.replace(/"/g, '\\"').replace(/\n/g, '\\n'), "\"");
+  }
+
+  return url;
+};
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports) {
+
+module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M36.3,28.2a6.1,6.1,0,0,1-12.2,0,6.1,6.1,0,0,1,12.2,0Zm11,0h-11m8.6,0v4.7M17.7,48.2A23.1,23.1,0,0,1,6.8,28.7a23.2,23.2,0,0,1,13.9-21m20.4,7.4A18,18,0,0,0,30,11.3,17.6,17.6,0,0,0,12.2,28.8,17.6,17.6,0,0,0,30,46.2a17.3,17.3,0,0,0,8.5-2.1m-4.2-27a13.4,13.4,0,0,0-4-.6A12.4,12.4,0,0,0,17.7,28.8a12.2,12.2,0,0,0,2.3,7' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports) {
+
+module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M19.1,49.9A24.8,24.8,0,0,1,22.3,6m22,8A19.1,19.1,0,1,0,32.4,47.8a18.6,18.6,0,0,0,9.1-2.3M37,16.2a16.2,16.2,0,0,0-4.4-.7,13.4,13.4,0,0,0-11.1,21M34.8,22.6a7.8,7.8,0,0,0-2.2-.3,6.7,6.7,0,0,0,0,13.4,7.8,7.8,0,0,0,2.2-.3M25.9,29h8.9' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
+
+/***/ }),
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -989,141 +1375,7 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-class WebAudioSoundEmitter {
-    emit(sound) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let context;
-            try {
-                context = new AudioContext();
-            }
-            catch (e) {
-                console.error('AudioContext is not supported.');
-                throw e;
-            }
-            const audioBuffer = yield context.decodeAudioData(sound);
-            const source = context.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(context.destination);
-            yield (new Promise((resolve) => {
-                source.onended = resolve;
-                source.start(0);
-            }));
-        });
-    }
-}
-exports.WebAudioSoundEmitter = WebAudioSoundEmitter;
-//# sourceMappingURL=webAudioSoundEmitter.js.map
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const errors_1 = __webpack_require__(0);
-class RedirectNavigator {
-    navigate(url) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!url) {
-                throw new errors_1.MissingRedirectUri();
-            }
-            window.location.href = url;
-            return Promise.resolve();
-        });
-    }
-}
-exports.RedirectNavigator = RedirectNavigator;
-//# sourceMappingURL=redirectNavigator.js.map
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class OpenIdScopeParser {
-    constructor() {
-        this._scope = ['openid'];
-    }
-    addEmail() {
-        if (this._scope.includes('email')) {
-            return this;
-        }
-        this._scope.push('email');
-        return this;
-    }
-    addProfile() {
-        if (this._scope.includes('profile')) {
-            return this;
-        }
-        this._scope.push('profile');
-        return this;
-    }
-    getValue() {
-        return this._scope.join(' ');
-    }
-}
-exports.OpenIdScopeParser = OpenIdScopeParser;
-//# sourceMappingURL=scopeParser.js.map
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const geo_1 = __webpack_require__(4);
-class HTML5GeoProvider {
-    getGeo() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { coords } = yield this._getGeo();
-            return new geo_1.Geolocation(coords.latitude, coords.longitude, coords.accuracy);
-        });
-    }
-    _getGeo() {
-        return new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
-        });
-    }
-}
-exports.HTML5GeoProvider = HTML5GeoProvider;
-//# sourceMappingURL=html5GeoProvider.js.map
-
-/***/ }),
-/* 14 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* MIT https://github.com/kenwheeler/cash */
@@ -2411,10 +2663,10 @@ if (true) {
 })();
 
 /***/ }),
-/* 15 */
+/* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"cyberus-key-widget\"></div>\n\n<div class=\"cyberus-key-widget\">\n  <button class=\"login-button\">\n    <img src=\"{{widgetImageUrl}}\" alt=\"Click to log in\" />\n  </button>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"#\" target=\"_parent\">Lock now</a>\n  </div>\n</div>";
+module.exports = "<div class=\"cyberuskey-widget\">\n  <div class=\"login-button-container\">\n      <div class=\"lds-ripple {{theme}}\"><div></div><div></div></div>\n      <div class=\"lds-ring {{theme}}\"><div></div><div></div><div></div><div></div></div>\n\n      <div class=\"login-button {{theme}}\">\n          <div class=\"login-button-icon\"></div>\n          <div class=\"login-button-vl\"></div>\n          <div class=\"login-button-text-container\">\n            <span class=\"login-buton-text\">{{loginText}}</span>\n          </div>\n      </div>\n  </div>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"#\" target=\"_parent\">Lock now</a>\n  </div>\n</div>\n";
 
 /***/ })
 /******/ ]);

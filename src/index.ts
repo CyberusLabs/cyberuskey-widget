@@ -1,14 +1,9 @@
+import { Cash, CashStatic, Selector } from 'cash-dom/dist/cash.d';
+import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter } from "cyberuskey-sdk";
 import './styles/widget.scss';
-import {
-  CyberusKeyAPI,
-  OpenIdScopeParser,
-  RedirectNavigator,
-  WebAudioSoundEmitter,
-  GeoProvider
-} from "cyberuskey-sdk";
 
 
-const $ = require('cash-dom');
+const $: ((selector?: Selector, context?: Element | HTMLElement | Document | Cash) => Cash) & CashStatic = require('cash-dom');
 const widgetTemplate = require("./templates/widget.html")
 const widgetImages = {
   'default': 'img/cyberus/cyberus_login_widget.png',
@@ -17,6 +12,30 @@ const widgetImages = {
 
 
 export * from "cyberuskey-sdk";
+
+/**
+ * Defines the widget animation.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum WidgetAnimation {
+  None = 0,
+  Blinking,
+  Waves
+}
+
+/**
+ * Widget options passed to the its constructor.
+ *
+ * @export
+ * @interface WidgetOptions
+ */
+export interface WidgetOptions {
+  theme?: string;
+  serverUrl?: string;
+  animation?: WidgetAnimation;
+}
 
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
@@ -28,8 +47,12 @@ export * from "cyberuskey-sdk";
  * import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
  * 
  * $(document).ready(() => {
- *  const cyberusKeyButton = new CyberusKeyWidget('default', API_URL);
- *  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+ *   const cyberusKeyButton = new CyberusKeyWidget({
+ *     theme: 'default',
+ *     serverUrl: API_URL
+ *   };
+ * 
+ *   cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
  * });
  * ```
  *
@@ -46,21 +69,28 @@ export class CyberusKeyWidget {
   private _nonce: string;
   private _initialized: boolean;
   private _inProgress: boolean;
+  private _containingElementSelector: string;
+  private _animation: WidgetAnimation;
+
 
   /**
    * Creates an instance of CyberusKeyWidget.
    *
-   * @param {string} [theme='default'] A theme of the button.
-   * @param {string} [serverUrl='https://auth-server-demo.cyberuslabs.net'] Cyberus Key Authentication server URL.
+   * @param {WidgetOptions} [options={}] Widget options.
    * @memberof CyberusKeyWidget
    */
-  constructor(theme = 'default', serverUrl: string = 'https://auth-server-demo.cyberuslabs.net') {
+  constructor(options: WidgetOptions = {}) {
+    const theme = options.theme || 'default';
+    const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
+    const animation = options.animation || WidgetAnimation.Blinking;
+
     if (!Object.keys(widgetImages).includes(theme)) {
       throw new Error(`Theme "${theme}" is not supported.`);
     }
 
     this._serverUrl = new URL(serverUrl);
     this._theme = theme;
+    this._animation = animation;
     this._initialized = false;
     this._inProgress = false;
   }
@@ -71,7 +101,8 @@ export class CyberusKeyWidget {
    * @param {string} containingElementSelector Selector of a containing DOM element for the button.
    * @param {string} clientId Public client ID generated during creating the account.
    * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
-   * @param {GeoProvider} [geoProvider] Provider of a geolocalization. For a web browser use HTML5GeoProvider.
+   * @param {GeoProvider} [geoProvider] Provider of a geolocalization. `If passed, then geolocalization measurement will be taken`.
+   *    For a web browser use HTML5GeoProvider.
    *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
    *    Those measurements can be used also to general improvement of the security.
    * @param {string} [state]
@@ -95,13 +126,15 @@ export class CyberusKeyWidget {
     this._geoProvider = geoProvider;
     this._state = state;
     this._nonce = nonce;
+    this._containingElementSelector = containingElementSelector;
 
+    const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
     const widgetHtml = widgetTemplate
-      .replace('{{widgetImageUrl}}', this._getUrl(widgetImages[this._theme]));
+      .replace(/{{theme}}/g, this._theme)
+      .replace(/{{loginText}}/g, buttonText);
 
-    $(widgetHtml)
-      .appendTo(containingElementSelector)
-      .on('click', this._loginButtonClick.bind(this));
+    $(widgetHtml).appendTo(containingElementSelector);
+    $(this._getElement('.login-button-container .login-button')).on('click', this._loginButtonClick.bind(this));
 
     this._initialized = true;
   }
@@ -115,25 +148,90 @@ export class CyberusKeyWidget {
 
     const api = new CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
     const scope = (new OpenIdScopeParser()).addEmail().addProfile();
+    const soundEmitter = new WebAudioSoundEmitter();
+
+    this._loading();
 
     try {
-      await api.authenticate(
+      const sound = await api.navigateAndGetTheSound(
         this._clientId,
         this._redirectUri,
         scope,
-        new WebAudioSoundEmitter(),
         new RedirectNavigator(),
         this._state,
         this._nonce);
+
+      this._noLoading();
+      this._animate();
+
+      await soundEmitter.emit(sound);
     } catch (error) {
+      this._stopBlinking();
       this._inProgress = false;
 
       throw error;
+    } finally {
+      this._stopAnimation();
+      this._loading();
     }
 
   }
 
   _getUrl(path: string): string {
     return (new URL(path, this._serverUrl)).href;
+  }
+
+  _getElement(selector: string) {
+    return $(`${this._containingElementSelector} ${selector}`);
+  }
+
+  _loading() {
+    this._getElement('.lds-ring').addClass('enabled');
+    this._disable();
+  }
+
+  _noLoading() {
+    this._enable();
+    this._getElement('.lds-ring').removeClass('enabled');
+  }
+
+  _disable() {
+    this._getElement('.login-button').addClass('disabled');
+  }
+
+  _enable() {
+    this._getElement('.login-button').removeClass('disabled');
+  }
+
+  _blink() {
+    this._getElement('.login-button').addClass('blinking');
+  }
+
+  _stopBlinking() {
+    this._getElement('.login-button').removeClass('blinking');
+  }
+
+  _waves() {
+    this._getElement('.lds-ripple').addClass('enabled');
+  }
+
+  _stopWaves() {
+    this._getElement('.lds-ripple').removeClass('enabled');
+  }
+
+  _animate() {
+    if (this._animation === WidgetAnimation.Blinking) {
+      this._blink();
+    } else if (this._animation === WidgetAnimation.Waves) {
+      this._waves();
+    }
+  }
+
+  _stopAnimation() {
+    if (this._animation === WidgetAnimation.Blinking) {
+      this._stopBlinking();
+    } else if (this._animation === WidgetAnimation.Waves) {
+      this._stopWaves();
+    }
   }
 }

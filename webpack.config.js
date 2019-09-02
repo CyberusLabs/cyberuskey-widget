@@ -33,6 +33,17 @@ module.exports = {
         ],
       },
       {
+        test: /\.svg$/i,
+        use: [
+          {
+            loader: 'svg-url-loader',
+            options: {
+              limit: 1024,
+            },
+          },
+        ],
+      },
+      {
         test: /\.(html)$/,
         use: {
           loader: 'html-loader'

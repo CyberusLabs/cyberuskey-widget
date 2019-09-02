@@ -1,3 +1,7 @@
+<p>
+  <img src="https://cyberuslabs.com/wp-content/uploads/2015/09/cl_new_logo-e1553199321586.png" alt="Cyberus Key logo">
+</p>
+
 # What is Cyberus Key?
 
 Your users will never need to remember or input a password again with Cyberus Key, our one-touch
@@ -13,12 +17,35 @@ proccess will be started.
 
 # How to install?
 
-TODO
+With NPM:
+```
+npm install cyberuskey-widget
+```
+
+With Yarn:
+```
+yarn add cyberuskey-widget
+```
+
+And then you can embed the button on your web page:
+
+```javascript
+import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
+
+$(document).ready(() => {
+  const cyberusKeyButton = new CyberusKeyWidget({
+    theme: 'default',
+    serverUrl: API_URL
+  };
+
+  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+});
+```
+
+# Links
+
+CyberusKey SDK docs: https://github.com/CyberusLabs/cyberuskey-sdk/
 
 # Documentation
 
 {{>main}}
-
-# Links
-
-TODO
