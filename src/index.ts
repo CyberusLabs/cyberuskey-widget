@@ -26,15 +26,85 @@ export enum WidgetAnimation {
 }
 
 /**
- * Widget options passed to the its constructor.
+ * Widget options passed to a CyberusKeyWidget constructor.
  *
  * @export
- * @interface WidgetOptions
+ * @class WidgetOptions
  */
-export interface WidgetOptions {
-  theme?: string;
-  serverUrl?: string;
-  animation?: WidgetAnimation;
+export class WidgetOptions {
+  /**
+   * Public client ID generated during creating the account.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly clientId: string;
+
+  /**
+   * Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly redirectUri: string;
+
+  /**
+   * A theme of the widget. You can use: `default` or `eliot`.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly theme: string = 'default';
+
+  /**
+   * Cyberus Key's Authentication Server URL.
+   * 
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly serverUrl: string = 'https://auth-server-demo.cyberuslabs.net';
+
+  /**
+   * Animation of the widget applied during a sound transmission.
+   *
+   * @type {WidgetAnimation}
+   * @memberof WidgetOptions
+   */
+  readonly animation: WidgetAnimation = WidgetAnimation.Blinking;
+
+  /**
+   * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
+   * For a web browser use HTML5GeoProvider.
+   * Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
+   * Those measurements can be used also to general improvement of the security.
+   *
+   * @type {GeoProvider}
+   * @memberof WidgetOptions
+   */
+  readonly geoProvider?: GeoProvider = null;
+
+  /**
+   * `RECOMMENDED`. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
+   * The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
+   * It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
+   * The state parameter is a string so you can encode any other information in it.
+   * 
+   * The value can be passed e.g. through an encrypted cookie and validated on the client server before making a Token Request.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly state?: string = null;
+
+  /**
+   * String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+   * The value is passed through unmodified from the Authentication Request to the ID Token.
+   * Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly nonce?: string  = null;
 }
 
 /**
@@ -72,22 +142,30 @@ export class CyberusKeyWidget {
   private _containingElementSelector: string;
   private _animation: WidgetAnimation;
 
-
   /**
    * Creates an instance of CyberusKeyWidget.
-   *
-   * @param {WidgetOptions} [options={}] Widget options.
+   * 
+   * @param {WidgetOptions} options
    * @memberof CyberusKeyWidget
    */
-  constructor(options: WidgetOptions = {}) {
+  constructor(options: WidgetOptions) {
+    if (!options || !options.clientId || !options.redirectUri) {
+      throw new Error('CyberusKeyWidget: Missing options(s).')
+    }
+
     const theme = options.theme || 'default';
     const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
     const animation = options.animation || WidgetAnimation.Blinking;
 
     if (!Object.keys(widgetImages).includes(theme)) {
-      throw new Error(`Theme "${theme}" is not supported.`);
+      throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
     }
 
+    this._clientId = options.clientId;
+    this._redirectUri = options.redirectUri;
+    this._geoProvider = options.geoProvider;
+    this._state = options.state;
+    this._nonce = options.nonce;
     this._serverUrl = new URL(serverUrl);
     this._theme = theme;
     this._animation = animation;
@@ -99,37 +177,18 @@ export class CyberusKeyWidget {
    * Creates a Cyberus Key button element in the DOM tree.
    *
    * @param {string} containingElementSelector Selector of a containing DOM element for the button.
-   * @param {string} clientId Public client ID generated during creating the account.
-   * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
-   * @param {GeoProvider} [geoProvider] Provider of a geolocalization. `If passed, then geolocalization measurement will be taken`.
-   *    For a web browser use HTML5GeoProvider.
-   *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
-   *    Those measurements can be used also to general improvement of the security.
-   * @param {string} [state]
-   *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
-   *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
-   *    It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
-   *    The state parameter is a string so you can encode any other information in it.
-   * @param {string} [nonce]
-   *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
-   *    The value is passed through unmodified from the Authentication Request to the ID Token.
-   *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
    * @memberof CyberusKeyWidget
    */
-  create(containingElementSelector: string, clientId: string, redirectUri: string, geoProvider?: GeoProvider, state?: string, nonce?: string): void {
+  create(containingElementSelector: string): void {
     if (this._initialized) {
       throw new Error(`Widget is already initialized.`);
     }
 
-    this._clientId = clientId;
-    this._redirectUri = redirectUri;
-    this._geoProvider = geoProvider;
-    this._state = state;
-    this._nonce = nonce;
     this._containingElementSelector = containingElementSelector;
 
     const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
     const widgetHtml = widgetTemplate
+      .replace(/{{lostDeviceUrl}}/g, this._getUrl('dashboard'))
       .replace(/{{theme}}/g, this._theme)
       .replace(/{{loginText}}/g, buttonText);
 
@@ -161,20 +220,20 @@ export class CyberusKeyWidget {
         this._state,
         this._nonce);
 
-      this._noLoading();
+      this._stopLoading();
       this._animate();
 
       await soundEmitter.emit(sound);
     } catch (error) {
-      this._stopBlinking();
+      this._stopLoading();
+      this._stopAnimation();
       this._inProgress = false;
 
       throw error;
-    } finally {
-      this._stopAnimation();
-      this._loading();
     }
 
+    this._stopAnimation();
+    this._loading();
   }
 
   _getUrl(path: string): string {
@@ -190,7 +249,7 @@ export class CyberusKeyWidget {
     this._disable();
   }
 
-  _noLoading() {
+  _stopLoading() {
     this._enable();
     this._getElement('.lds-ring').removeClass('enabled');
   }
@@ -204,11 +263,11 @@ export class CyberusKeyWidget {
   }
 
   _blink() {
-    this._getElement('.login-button').addClass('blinking');
+    this._getElement('.login-button-icon').addClass('blinking');
   }
 
   _stopBlinking() {
-    this._getElement('.login-button').removeClass('blinking');
+    this._getElement('.login-button-icon').removeClass('blinking');
   }
 
   _waves() {
@@ -220,6 +279,8 @@ export class CyberusKeyWidget {
   }
 
   _animate() {
+    this._getElement('.login-button').addClass('blocked');
+
     if (this._animation === WidgetAnimation.Blinking) {
       this._blink();
     } else if (this._animation === WidgetAnimation.Waves) {
@@ -228,6 +289,8 @@ export class CyberusKeyWidget {
   }
 
   _stopAnimation() {
+    this._getElement('.login-button').removeClass('blocked');
+
     if (this._animation === WidgetAnimation.Blinking) {
       this._stopBlinking();
     } else if (this._animation === WidgetAnimation.Waves) {

@@ -541,6 +541,69 @@ var WidgetAnimation;
     WidgetAnimation[WidgetAnimation["Waves"] = 2] = "Waves";
 })(WidgetAnimation = exports.WidgetAnimation || (exports.WidgetAnimation = {}));
 /**
+ * Widget options passed to a CyberusKeyWidget constructor.
+ *
+ * @export
+ * @class WidgetOptions
+ */
+class WidgetOptions {
+    constructor() {
+        /**
+         * A theme of the widget. You can use: `default` or `eliot`.
+         *
+         * @type {string}
+         * @memberof WidgetOptions
+         */
+        this.theme = 'default';
+        /**
+         * Cyberus Key's Authentication Server URL.
+         *
+         * @type {string}
+         * @memberof WidgetOptions
+         */
+        this.serverUrl = 'https://auth-server-demo.cyberuslabs.net';
+        /**
+         * Animation of the widget applied during a sound transmission.
+         *
+         * @type {WidgetAnimation}
+         * @memberof WidgetOptions
+         */
+        this.animation = WidgetAnimation.Blinking;
+        /**
+         * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
+         * For a web browser use HTML5GeoProvider.
+         * Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
+         * Those measurements can be used also to general improvement of the security.
+         *
+         * @type {GeoProvider}
+         * @memberof WidgetOptions
+         */
+        this.geoProvider = null;
+        /**
+         * `RECOMMENDED`. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
+         * The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
+         * It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
+         * The state parameter is a string so you can encode any other information in it.
+         *
+         * The value can be passed e.g. through an encrypted cookie and validated on the client server before making a Token Request.
+         *
+         * @type {string}
+         * @memberof WidgetOptions
+         */
+        this.state = null;
+        /**
+         * String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+         * The value is passed through unmodified from the Authentication Request to the ID Token.
+         * Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+         *
+         * @type {string}
+         * @memberof WidgetOptions
+         */
+        this.nonce = null;
+    }
+}
+exports.WidgetOptions = WidgetOptions;
+/**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
  *
  *
@@ -566,16 +629,24 @@ class CyberusKeyWidget {
     /**
      * Creates an instance of CyberusKeyWidget.
      *
-     * @param {WidgetOptions} [options={}] Widget options.
+     * @param {WidgetOptions} options
      * @memberof CyberusKeyWidget
      */
-    constructor(options = {}) {
+    constructor(options) {
+        if (!options || !options.clientId || !options.redirectUri) {
+            throw new Error('CyberusKeyWidget: Missing options(s).');
+        }
         const theme = options.theme || 'default';
         const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
         const animation = options.animation || WidgetAnimation.Blinking;
         if (!Object.keys(widgetImages).includes(theme)) {
-            throw new Error(`Theme "${theme}" is not supported.`);
+            throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
         }
+        this._clientId = options.clientId;
+        this._redirectUri = options.redirectUri;
+        this._geoProvider = options.geoProvider;
+        this._state = options.state;
+        this._nonce = options.nonce;
         this._serverUrl = new URL(serverUrl);
         this._theme = theme;
         this._animation = animation;
@@ -586,35 +657,16 @@ class CyberusKeyWidget {
      * Creates a Cyberus Key button element in the DOM tree.
      *
      * @param {string} containingElementSelector Selector of a containing DOM element for the button.
-     * @param {string} clientId Public client ID generated during creating the account.
-     * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
-     * @param {GeoProvider} [geoProvider] Provider of a geolocalization. `If passed, then geolocalization measurement will be taken`.
-     *    For a web browser use HTML5GeoProvider.
-     *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
-     *    Those measurements can be used also to general improvement of the security.
-     * @param {string} [state]
-     *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
-     *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
-     *    It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
-     *    The state parameter is a string so you can encode any other information in it.
-     * @param {string} [nonce]
-     *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
-     *    The value is passed through unmodified from the Authentication Request to the ID Token.
-     *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
      * @memberof CyberusKeyWidget
      */
-    create(containingElementSelector, clientId, redirectUri, geoProvider, state, nonce) {
+    create(containingElementSelector) {
         if (this._initialized) {
             throw new Error(`Widget is already initialized.`);
         }
-        this._clientId = clientId;
-        this._redirectUri = redirectUri;
-        this._geoProvider = geoProvider;
-        this._state = state;
-        this._nonce = nonce;
         this._containingElementSelector = containingElementSelector;
         const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
         const widgetHtml = widgetTemplate
+            .replace(/{{lostDeviceUrl}}/g, this._getUrl('dashboard'))
             .replace(/{{theme}}/g, this._theme)
             .replace(/{{loginText}}/g, buttonText);
         $(widgetHtml).appendTo(containingElementSelector);
@@ -633,19 +685,18 @@ class CyberusKeyWidget {
             this._loading();
             try {
                 const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce);
-                this._noLoading();
+                this._stopLoading();
                 this._animate();
                 yield soundEmitter.emit(sound);
             }
             catch (error) {
-                this._stopBlinking();
+                this._stopLoading();
+                this._stopAnimation();
                 this._inProgress = false;
                 throw error;
             }
-            finally {
-                this._stopAnimation();
-                this._loading();
-            }
+            this._stopAnimation();
+            this._loading();
         });
     }
     _getUrl(path) {
@@ -658,7 +709,7 @@ class CyberusKeyWidget {
         this._getElement('.lds-ring').addClass('enabled');
         this._disable();
     }
-    _noLoading() {
+    _stopLoading() {
         this._enable();
         this._getElement('.lds-ring').removeClass('enabled');
     }
@@ -669,10 +720,10 @@ class CyberusKeyWidget {
         this._getElement('.login-button').removeClass('disabled');
     }
     _blink() {
-        this._getElement('.login-button').addClass('blinking');
+        this._getElement('.login-button-icon').addClass('blinking');
     }
     _stopBlinking() {
-        this._getElement('.login-button').removeClass('blinking');
+        this._getElement('.login-button-icon').removeClass('blinking');
     }
     _waves() {
         this._getElement('.lds-ripple').addClass('enabled');
@@ -681,6 +732,7 @@ class CyberusKeyWidget {
         this._getElement('.lds-ripple').removeClass('enabled');
     }
     _animate() {
+        this._getElement('.login-button').addClass('blocked');
         if (this._animation === WidgetAnimation.Blinking) {
             this._blink();
         }
@@ -689,6 +741,7 @@ class CyberusKeyWidget {
         }
     }
     _stopAnimation() {
+        this._getElement('.login-button').removeClass('blocked');
         if (this._animation === WidgetAnimation.Blinking) {
             this._stopBlinking();
         }
@@ -945,7 +998,7 @@ var getUrl = __webpack_require__(13);
 var ___CSS_LOADER_URL___0___ = getUrl(__webpack_require__(14));
 var ___CSS_LOADER_URL___1___ = getUrl(__webpack_require__(15));
 // Module
-exports.push([module.i, ".cyberuskey-widget{position:relative;max-width:480px}.cyberuskey-widget .lds-ring{position:absolute;display:none;left:calc(50% - 32px);width:64px;height:64px}.cyberuskey-widget .lds-ring.enabled{display:block}.cyberuskey-widget .lds-ring.default{top:2px}.cyberuskey-widget .lds-ring.eliot{top:10px}.cyberuskey-widget .lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #ababab;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:#ababab transparent transparent transparent}.cyberuskey-widget .lds-ring div:nth-child(1){animation-delay:-0.45s}.cyberuskey-widget .lds-ring div:nth-child(2){animation-delay:-0.3s}.cyberuskey-widget .lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.cyberuskey-widget .blinking{animation:blinking 0.8s infinite}@keyframes blinking{0%{opacity:1}50%{opacity:.6}100%{opacity:1}}.cyberuskey-widget .lds-ripple{position:absolute;display:none;width:130px;height:130px}.cyberuskey-widget .lds-ripple.default{top:-26px;left:-21px}.cyberuskey-widget .lds-ripple.eliot{top:-21px;left:-21px}.cyberuskey-widget .lds-ripple.enabled{display:block}.cyberuskey-widget .lds-ripple div{position:absolute;border:6px solid #ababab;opacity:1;border-radius:50%;animation:lds-ripple 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite}.cyberuskey-widget .lds-ripple div:nth-child(2){animation-delay:-0.5s}@keyframes lds-ripple{0%{top:64px;left:64px;width:0;height:0;opacity:1}100%{top:-1px;left:-1px;width:130px;height:130px;opacity:0}}.cyberuskey-widget .login-button-container{position:relative}.cyberuskey-widget .login-button{display:flex;height:66px;background:#eb5e18;border-radius:6px;transition:opacity .25s ease-in-out;cursor:pointer}.cyberuskey-widget .login-button .login-button-icon{position:relative;flex:0 0 80px;max-width:80px}.cyberuskey-widget .login-button .login-button-text-container{display:flex;flex:1 1 400px;align-items:center;justify-content:center;user-select:none}.cyberuskey-widget .login-button.blinking{cursor:not-allowed}.cyberuskey-widget .login-button.disabled{opacity:.6;cursor:not-allowed}.cyberuskey-widget .login-button.default{background:linear-gradient(to right, #eb5e18, #ef7d46 100%);min-width:310px}.cyberuskey-widget .login-button.default .login-button-icon{background:no-repeat center url(" + ___CSS_LOADER_URL___0___ + ");background-size:75%}.cyberuskey-widget .login-button.default .login-buton-text{color:white;font-size:1.4em}.cyberuskey-widget .login-button.default .login-button-vl{border-left:1px solid #f18c5a;height:100%}.cyberuskey-widget .login-button.eliot{background:linear-gradient(180deg, #1490FB, #0754B6 100%);max-width:465px;min-width:360px;height:80px}.cyberuskey-widget .login-button.eliot .login-button-icon{background:no-repeat center url(" + ___CSS_LOADER_URL___1___ + ");background-size:75%}.cyberuskey-widget .login-button.eliot .login-buton-text{color:white;font-size:1.7em}.cyberuskey-widget .login-button.eliot .login-button-vl{border-left:1px solid #3897EF;height:100%}.cyberuskey-widget .lost-phone{flex:0 0 auto;margin-top:16px;text-align:center;color:#7e8aac;font-size:18px;font-weight:400;letter-spacing:-0.32px;line-height:52.8px}\n", ""]);
+exports.push([module.i, ".cyberuskey-widget{position:relative;max-width:480px}.cyberuskey-widget .lds-ring{position:absolute;display:none;left:calc(50% - 32px);width:64px;height:64px}.cyberuskey-widget .lds-ring.enabled{display:block}.cyberuskey-widget .lds-ring.default{top:2px}.cyberuskey-widget .lds-ring.eliot{top:10px}.cyberuskey-widget .lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #ababab;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;border-color:#ababab transparent transparent transparent}.cyberuskey-widget .lds-ring div:nth-child(1){animation-delay:-0.45s}.cyberuskey-widget .lds-ring div:nth-child(2){animation-delay:-0.3s}.cyberuskey-widget .lds-ring div:nth-child(3){animation-delay:-0.15s}@keyframes lds-ring{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.cyberuskey-widget .blinking{animation:blinking 0.8s infinite}@keyframes blinking{0%{opacity:1}50%{opacity:.2}100%{opacity:1}}.cyberuskey-widget .lds-ripple{position:absolute;display:none;width:130px;height:130px}.cyberuskey-widget .lds-ripple.default{top:-26px;left:-21px}.cyberuskey-widget .lds-ripple.eliot{top:-21px;left:-21px}.cyberuskey-widget .lds-ripple.enabled{display:block}.cyberuskey-widget .lds-ripple div{position:absolute;border:6px solid #ababab;opacity:1;border-radius:50%;animation:lds-ripple 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite}.cyberuskey-widget .lds-ripple div:nth-child(2){animation-delay:-0.5s}@keyframes lds-ripple{0%{top:64px;left:64px;width:0;height:0;opacity:1}100%{top:-1px;left:-1px;width:130px;height:130px;opacity:0}}.cyberuskey-widget .login-button-container{position:relative}.cyberuskey-widget .login-button{display:flex;height:66px;background:#eb5e18;border-radius:6px;transition:opacity .25s ease-in-out;cursor:pointer}.cyberuskey-widget .login-button .login-button-icon{position:relative;flex:0 0 80px;max-width:80px}.cyberuskey-widget .login-button .login-button-text-container{display:flex;flex:1 1 400px;align-items:center;justify-content:center;user-select:none}.cyberuskey-widget .login-button .login-buton-text,.cyberuskey-widget .login-button .login-buton-text b,.cyberuskey-widget .login-button .lost-phone{font-family:Helvetica, Arial, sans-serif}.cyberuskey-widget .login-button.blocked{cursor:not-allowed}.cyberuskey-widget .login-button.disabled{opacity:.6;cursor:not-allowed}.cyberuskey-widget .login-button.default{background:linear-gradient(to right, #eb5e18, #ef7d46 100%);min-width:310px}.cyberuskey-widget .login-button.default .login-button-icon{background-color:transparent;background:no-repeat center url(" + ___CSS_LOADER_URL___0___ + ");background-size:75%}.cyberuskey-widget .login-button.default .login-buton-text{color:white;font-size:1.4em}.cyberuskey-widget .login-button.default .login-button-vl{border-left:1px solid #f18c5a;height:100%}.cyberuskey-widget .login-button.eliot{background:linear-gradient(180deg, #1490FB, #0754B6 100%);max-width:465px;min-width:360px;height:80px}.cyberuskey-widget .login-button.eliot .login-button-icon{background:no-repeat center url(" + ___CSS_LOADER_URL___1___ + ");background-size:75%}.cyberuskey-widget .login-button.eliot .login-buton-text{color:white;font-size:1.7em}.cyberuskey-widget .login-button.eliot .login-button-vl{border-left:1px solid #3897EF;height:100%}.cyberuskey-widget .lost-phone{flex:0 0 auto;margin-top:16px;text-align:center;color:#7e8aac;font-size:18px;font-weight:400;letter-spacing:-0.32px;line-height:52.8px}\n", ""]);
 
 
 /***/ }),
@@ -2666,7 +2719,7 @@ if (true) {
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"cyberuskey-widget\">\n  <div class=\"login-button-container\">\n      <div class=\"lds-ripple {{theme}}\"><div></div><div></div></div>\n      <div class=\"lds-ring {{theme}}\"><div></div><div></div><div></div><div></div></div>\n\n      <div class=\"login-button {{theme}}\">\n          <div class=\"login-button-icon\"></div>\n          <div class=\"login-button-vl\"></div>\n          <div class=\"login-button-text-container\">\n            <span class=\"login-buton-text\">{{loginText}}</span>\n          </div>\n      </div>\n  </div>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"#\" target=\"_parent\">Lock now</a>\n  </div>\n</div>\n";
+module.exports = "<div class=\"cyberuskey-widget\">\n  <div class=\"login-button-container\">\n      <div class=\"lds-ripple {{theme}}\"><div></div><div></div></div>\n      <div class=\"lds-ring {{theme}}\"><div></div><div></div><div></div><div></div></div>\n\n      <div class=\"login-button {{theme}}\">\n          <div class=\"login-button-icon\"></div>\n          <div class=\"login-button-vl\"></div>\n          <div class=\"login-button-text-container\">\n            <span class=\"login-buton-text\">{{loginText}}</span>\n          </div>\n      </div>\n  </div>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"{{lostDeviceUrl}}\" target=\"_parent\">Lock now</a>\n  </div>\n</div>\n";
 
 /***/ })
 /******/ ]);

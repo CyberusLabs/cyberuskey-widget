@@ -14,15 +14,78 @@ export declare enum WidgetAnimation {
     Waves = 2
 }
 /**
- * Widget options passed to the its constructor.
+ * Widget options passed to a CyberusKeyWidget constructor.
  *
  * @export
- * @interface WidgetOptions
+ * @class WidgetOptions
  */
-export interface WidgetOptions {
-    theme?: string;
-    serverUrl?: string;
-    animation?: WidgetAnimation;
+export declare class WidgetOptions {
+    /**
+     * Public client ID generated during creating the account.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly clientId: string;
+    /**
+     * Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly redirectUri: string;
+    /**
+     * A theme of the widget. You can use: `default` or `eliot`.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly theme: string;
+    /**
+     * Cyberus Key's Authentication Server URL.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly serverUrl: string;
+    /**
+     * Animation of the widget applied during a sound transmission.
+     *
+     * @type {WidgetAnimation}
+     * @memberof WidgetOptions
+     */
+    readonly animation: WidgetAnimation;
+    /**
+     * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
+     * For a web browser use HTML5GeoProvider.
+     * Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
+     * Those measurements can be used also to general improvement of the security.
+     *
+     * @type {GeoProvider}
+     * @memberof WidgetOptions
+     */
+    readonly geoProvider?: GeoProvider;
+    /**
+     * `RECOMMENDED`. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
+     * The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
+     * It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
+     * The state parameter is a string so you can encode any other information in it.
+     *
+     * The value can be passed e.g. through an encrypted cookie and validated on the client server before making a Token Request.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly state?: string;
+    /**
+     * String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+     * The value is passed through unmodified from the Authentication Request to the ID Token.
+     * Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly nonce?: string;
 }
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
@@ -61,37 +124,22 @@ export declare class CyberusKeyWidget {
     /**
      * Creates an instance of CyberusKeyWidget.
      *
-     * @param {WidgetOptions} [options={}] Widget options.
+     * @param {WidgetOptions} options
      * @memberof CyberusKeyWidget
      */
-    constructor(options?: WidgetOptions);
+    constructor(options: WidgetOptions);
     /**
      * Creates a Cyberus Key button element in the DOM tree.
      *
      * @param {string} containingElementSelector Selector of a containing DOM element for the button.
-     * @param {string} clientId Public client ID generated during creating the account.
-     * @param {string} redirectUri Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.
-     * @param {GeoProvider} [geoProvider] Provider of a geolocalization. `If passed, then geolocalization measurement will be taken`.
-     *    For a web browser use HTML5GeoProvider.
-     *    Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
-     *    Those measurements can be used also to general improvement of the security.
-     * @param {string} [state]
-     *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
-     *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
-     *    It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
-     *    The state parameter is a string so you can encode any other information in it.
-     * @param {string} [nonce]
-     *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
-     *    The value is passed through unmodified from the Authentication Request to the ID Token.
-     *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
      * @memberof CyberusKeyWidget
      */
-    create(containingElementSelector: string, clientId: string, redirectUri: string, geoProvider?: GeoProvider, state?: string, nonce?: string): void;
+    create(containingElementSelector: string): void;
     _loginButtonClick(): Promise<void>;
     _getUrl(path: string): string;
     _getElement(selector: string): Cash;
     _loading(): void;
-    _noLoading(): void;
+    _stopLoading(): void;
     _disable(): void;
     _enable(): void;
     _blink(): void;

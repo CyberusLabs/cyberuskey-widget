@@ -34,7 +34,11 @@
       user-select: none;
     }
 
-    &.blinking {
+    .login-buton-text, .login-buton-text b, .lost-phone {
+      font-family: Helvetica, Arial, sans-serif;
+    }
+
+    &.blocked {
       cursor: not-allowed;
     }
 
@@ -48,6 +52,7 @@
       min-width: 310px;
 
       .login-button-icon {
+        background-color: transparent;
         background: no-repeat center url('../img/button-default.svg');
         background-size: 75%;
       }

@@ -47,23 +47,76 @@ $(document).ready(() => {
 ## Classes
 
 <dl>
+<dt><a href="#WidgetOptions">WidgetOptions</a></dt>
+<dd></dd>
 <dt><a href="#CyberusKeyWidget">CyberusKeyWidget</a></dt>
 <dd></dd>
-</dl>
-
-## Interfaces
-
-<dl>
-<dt><a href="#WidgetOptions">WidgetOptions</a></dt>
-<dd><p>Widget options passed to the its constructor.</p></dd>
 </dl>
 
 <a name="WidgetOptions"></a>
 
 ## WidgetOptions
-<p>Widget options passed to the its constructor.</p>
+**Kind**: global class  
 
-**Kind**: global interface  
+* [WidgetOptions](#WidgetOptions)
+    * [new WidgetOptions()](#new_WidgetOptions_new)
+    * [.theme](#WidgetOptions.theme) : <code>string</code>
+    * [.serverUrl](#WidgetOptions.serverUrl) : <code>string</code>
+    * [.animation](#WidgetOptions.animation) : [<code>WidgetAnimation</code>](#WidgetAnimation)
+    * [.geoProvider](#WidgetOptions.geoProvider) : <code>GeoProvider</code>
+    * [.state](#WidgetOptions.state) : <code>string</code>
+    * [.nonce](#WidgetOptions.nonce) : <code>string</code>
+
+<a name="new_WidgetOptions_new"></a>
+
+### new WidgetOptions()
+<p>Widget options passed to a CyberusKeyWidget constructor.</p>
+
+<a name="WidgetOptions.theme"></a>
+
+### WidgetOptions.theme : <code>string</code>
+<p>A theme of the widget. You can use: <code>default</code> or <code>eliot</code>.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.serverUrl"></a>
+
+### WidgetOptions.serverUrl : <code>string</code>
+<p>Cyberus Key's Authentication Server URL.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.animation"></a>
+
+### WidgetOptions.animation : [<code>WidgetAnimation</code>](#WidgetAnimation)
+<p>Animation of the widget applied during a sound transmission.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.geoProvider"></a>
+
+### WidgetOptions.geoProvider : <code>GeoProvider</code>
+<p>Provider of a geolocalization. <code>If passed, then geolocalization measurement is taken</code>.
+For a web browser use HTML5GeoProvider.
+Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set <code>fail_on_geo_mismatch</code>).
+Those measurements can be used also to general improvement of the security.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.state"></a>
+
+### WidgetOptions.state : <code>string</code>
+<p><code>RECOMMENDED</code>. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
+The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
+It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request).
+The state parameter is a string so you can encode any other information in it.</p>
+<p>The value can be passed e.g. through an encrypted cookie and validated on the client server before making a Token Request.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.nonce"></a>
+
+### WidgetOptions.nonce : <code>string</code>
+<p>String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
+The value is passed through unmodified from the Authentication Request to the ID Token.
+Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
 <a name="CyberusKeyWidget"></a>
 
 ## CyberusKeyWidget
@@ -72,10 +125,10 @@ $(document).ready(() => {
 * [CyberusKeyWidget](#CyberusKeyWidget)
     * [new CyberusKeyWidget()](#new_CyberusKeyWidget_new)
     * _instance_
-        * [.create(containingElementSelector, clientId, redirectUri, [geoProvider], [state], [nonce])](#CyberusKeyWidget+create)
+        * [.create(containingElementSelector)](#CyberusKeyWidget+create)
     * _static_
         * [.CyberusKeyWidget](#CyberusKeyWidget.CyberusKeyWidget)
-            * [new CyberusKeyWidget([options])](#new_CyberusKeyWidget.CyberusKeyWidget_new)
+            * [new CyberusKeyWidget(options)](#new_CyberusKeyWidget.CyberusKeyWidget_new)
 
 <a name="new_CyberusKeyWidget_new"></a>
 
@@ -96,7 +149,7 @@ $(document).ready(() => {
 
 <a name="CyberusKeyWidget+create"></a>
 
-### cyberusKeyWidget.create(containingElementSelector, clientId, redirectUri, [geoProvider], [state], [nonce])
+### cyberusKeyWidget.create(containingElementSelector)
 <p>Creates a Cyberus Key button element in the DOM tree.</p>
 
 **Kind**: instance method of [<code>CyberusKeyWidget</code>](#CyberusKeyWidget)  
@@ -104,11 +157,6 @@ $(document).ready(() => {
 | Param | Type | Description |
 | --- | --- | --- |
 | containingElementSelector | <code>string</code> | <p>Selector of a containing DOM element for the button.</p> |
-| clientId | <code>string</code> | <p>Public client ID generated during creating the account.</p> |
-| redirectUri | <code>string</code> | <p>Redirect URI to which the response will be sent. If the value is not whitelisted then the request will fail.</p> |
-| [geoProvider] | <code>GeoProvider</code> | <p>Provider of a geolocalization. <code>If passed, then geolocalization measurement will be taken</code>. For a web browser use HTML5GeoProvider. Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set <code>fail_on_geo_mismatch</code>). Those measurements can be used also to general improvement of the security.</p> |
-| [state] | <code>string</code> | <p>RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie. The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response. It’s that unique and non-guessable value that allows you to prevent the attack by confirming if the value coming from the response matches the one you expect (the one you generated when initiating the request). The state parameter is a string so you can encode any other information in it.</p> |
-| [nonce] | <code>string</code> | <p>String value used to associate a Client session with an ID Token, and to mitigate replay attacks. The value is passed through unmodified from the Authentication Request to the ID Token. Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.</p> |
 
 <a name="CyberusKeyWidget.CyberusKeyWidget"></a>
 
@@ -116,13 +164,13 @@ $(document).ready(() => {
 **Kind**: static class of [<code>CyberusKeyWidget</code>](#CyberusKeyWidget)  
 <a name="new_CyberusKeyWidget.CyberusKeyWidget_new"></a>
 
-#### new CyberusKeyWidget([options])
+#### new CyberusKeyWidget(options)
 <p>Creates an instance of CyberusKeyWidget.</p>
 
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [options] | [<code>WidgetOptions</code>](#WidgetOptions) | <code>{}</code> | <p>Widget options.</p> |
+| Param | Type |
+| --- | --- |
+| options | [<code>WidgetOptions</code>](#WidgetOptions) | 
 
 <a name="WidgetAnimation"></a>
 
@@ -133,4 +181,8 @@ $(document).ready(() => {
 
 # Links
 
-TODO
+CyberusKey SDK docs: https://github.com/CyberusLabs/cyberuskey-sdk/
+
+# License
+
+[MIT](LICENSE.md) © Cyberus Labs sp. z o.o.
