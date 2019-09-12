@@ -27,22 +27,39 @@ With Yarn:
 yarn add cyberuskey-widget
 ```
 
+You can also get a minified file from JSDelivr's CDN:
+```
+<script src="https://cdn.jsdelivr.net/npm/cyberuskey-widget@0.0.5/dist/widget.min.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+  var CyberusKeyWidgetNamespace = window['cyberuskey-widget'];
+  var CyberusKeyWidget = CyberusKeyWidgetNamespace.CyberusKeyWidget;
+
+  new CyberusKeyWidget(/* ... */);
+</script>
+```
+
 And then you can embed the button on your web page:
 
 ```javascript
 import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
 
 $(document).ready(() => {
-  const cyberusKeyButton = new CyberusKeyWidget({
-    theme: 'default',
-    serverUrl: API_URL
-  };
+  const ckButton = new CyberusKeyWidget({
+    geoProvider: new HTML5GeoProvider(),
+    clientId: window.CyberusKey.CLIENT_ID,
+    redirectUri: window.CyberusKey.REDIRECT_URI,
+    state: window.CyberusKey.STATE,
+    nonce: window.CyberusKey.NONCE
+  });
 
-  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+  cyberusKeyButton.create('.cyberus-key-widget-container');
 });
 ```
 
 # Documentation
+
+Widget uses Cyberus Key JavaScript SDK, here you have the [documentation](https://github.com/CyberusLabs/cyberuskey-sdk/#CyberusKeyAPI).
 
 {{>main}}
 

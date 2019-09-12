@@ -1,16 +1,25 @@
-import { Cash } from 'cash-dom/dist/cash.d';
-import { GeoProvider } from "cyberuskey-sdk";
+import { GeoProvider } from 'cyberuskey-sdk';
 import './styles/widget.scss';
-export * from "cyberuskey-sdk";
+export * from 'cyberuskey-sdk';
 /**
  * Defines the widget animation.
+ * Use one of `None`, `Blinking`, `Waves`.
  *
- * @export
+ * @readonly
  * @enum {number}
  */
 export declare enum WidgetAnimation {
+    /**
+     * No animation.
+     */
     None = 0,
+    /**
+     * Logo is blinking.
+     */
     Blinking = 1,
+    /**
+     * Logo "emits" the waves.
+     */
     Waves = 2
 }
 /**
@@ -57,7 +66,7 @@ export declare class WidgetOptions {
     readonly animation: WidgetAnimation;
     /**
      * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
-     * For a web browser use HTML5GeoProvider.
+     * For a web browser use [HTML5GeoProvider](https://github.com/CyberusLabs/cyberuskey-sdk/#html5geoprovider).
      * Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
      * Those measurements can be used also to general improvement of the security.
      *
@@ -90,6 +99,7 @@ export declare class WidgetOptions {
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
  *
+ * If you miss some docs, try find them [here](https://github.com/CyberusLabs/cyberuskey-sdk/#CyberusKeyAPI), in Cyberus Key JavaScript SDK documentation .
  *
  * Example:
  *
@@ -97,12 +107,15 @@ export declare class WidgetOptions {
  * import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
  *
  * $(document).ready(() => {
- *   const cyberusKeyButton = new CyberusKeyWidget({
- *     theme: 'default',
- *     serverUrl: API_URL
- *   };
+ * const ckButton = new CyberusKeyWidget({
+ *    geoProvider: new HTML5GeoProvider(),
+ *    clientId: window.CyberusKey.CLIENT_ID,
+ *    redirectUri: window.CyberusKey.REDIRECT_URI,
+ *    state: window.CyberusKey.STATE,
+ *    nonce: window.CyberusKey.NONCE
+ *   });
  *
- *   cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+ *   cyberusKeyButton.create('.cyberus-key-widget-container');
  * });
  * ```
  *
@@ -119,8 +132,9 @@ export declare class CyberusKeyWidget {
     private _nonce;
     private _initialized;
     private _inProgress;
-    private _containingElementSelector;
+    private _containingElementClassName;
     private _animation;
+    private _containerElement;
     /**
      * Creates an instance of CyberusKeyWidget.
      *
@@ -131,13 +145,12 @@ export declare class CyberusKeyWidget {
     /**
      * Creates a Cyberus Key button element in the DOM tree.
      *
-     * @param {string} containingElementSelector Selector of a containing DOM element for the button.
+     * @param {string} containingElementClassName CSS class name of the containing DOM element for the Cyberus Key Widget.
      * @memberof CyberusKeyWidget
      */
-    create(containingElementSelector: string): void;
+    create(containingElementClassName: string): void;
     _loginButtonClick(): Promise<void>;
     _getUrl(path: string): string;
-    _getElement(selector: string): Cash;
     _loading(): void;
     _stopLoading(): void;
     _disable(): void;
@@ -148,4 +161,7 @@ export declare class CyberusKeyWidget {
     _stopWaves(): void;
     _animate(): void;
     _stopAnimation(): void;
+    _createButton(template: string, containerClassName: string): void;
+    _addClass(elementClassName: string, classNameToAdd: string): void;
+    _removeClass(elementClassName: string, classNameToAdd: string): void;
 }

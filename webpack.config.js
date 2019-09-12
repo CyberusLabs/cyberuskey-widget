@@ -7,6 +7,7 @@ module.exports = {
     'widget': './src/index.ts',
     'widget.min': './src/index.ts',
   },
+  devtool: 'source-map',
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),

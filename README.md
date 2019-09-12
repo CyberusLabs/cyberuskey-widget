@@ -27,22 +27,39 @@ With Yarn:
 yarn add cyberuskey-widget
 ```
 
+You can also get a minified file from JSDelivr's CDN:
+```
+<script src="https://cdn.jsdelivr.net/npm/cyberuskey-widget@0.0.5/dist/widget.min.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+  var CyberusKeyWidgetNamespace = window['cyberuskey-widget'];
+  var CyberusKeyWidget = CyberusKeyWidgetNamespace.CyberusKeyWidget;
+
+  new CyberusKeyWidget(/* ... */);
+</script>
+```
+
 And then you can embed the button on your web page:
 
 ```javascript
 import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
 
 $(document).ready(() => {
-  const cyberusKeyButton = new CyberusKeyWidget({
-    theme: 'default',
-    serverUrl: API_URL
-  };
+  const ckButton = new CyberusKeyWidget({
+    geoProvider: new HTML5GeoProvider(),
+    clientId: window.CyberusKey.CLIENT_ID,
+    redirectUri: window.CyberusKey.REDIRECT_URI,
+    state: window.CyberusKey.STATE,
+    nonce: window.CyberusKey.NONCE
+  });
 
-  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+  cyberusKeyButton.create('.cyberus-key-widget-container');
 });
 ```
 
 # Documentation
+
+Widget uses Cyberus Key JavaScript SDK, here you have the [documentation](https://github.com/CyberusLabs/cyberuskey-sdk/#CyberusKeyAPI).
 
 ## Classes
 
@@ -94,7 +111,7 @@ $(document).ready(() => {
 
 ### WidgetOptions.geoProvider : <code>GeoProvider</code>
 <p>Provider of a geolocalization. <code>If passed, then geolocalization measurement is taken</code>.
-For a web browser use HTML5GeoProvider.
+For a web browser use <a href="https://github.com/CyberusLabs/cyberuskey-sdk/#html5geoprovider">HTML5GeoProvider</a>.
 Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set <code>fail_on_geo_mismatch</code>).
 Those measurements can be used also to general improvement of the security.</p>
 
@@ -125,7 +142,7 @@ Sufficient entropy MUST be present in the nonce values used to prevent attackers
 * [CyberusKeyWidget](#CyberusKeyWidget)
     * [new CyberusKeyWidget()](#new_CyberusKeyWidget_new)
     * _instance_
-        * [.create(containingElementSelector)](#CyberusKeyWidget+create)
+        * [.create(containingElementClassName)](#CyberusKeyWidget+create)
     * _static_
         * [.CyberusKeyWidget](#CyberusKeyWidget.CyberusKeyWidget)
             * [new CyberusKeyWidget(options)](#new_CyberusKeyWidget.CyberusKeyWidget_new)
@@ -134,29 +151,33 @@ Sufficient entropy MUST be present in the nonce values used to prevent attackers
 
 ### new CyberusKeyWidget()
 <p>Class represents a UI button that uses <code>cyberuskey-sdk</code> and allows to make a login with Cyberus Key Authentication Server.</p>
+<p>If you miss some docs, try find them <a href="https://github.com/CyberusLabs/cyberuskey-sdk/#CyberusKeyAPI">here</a>, in Cyberus Key JavaScript SDK documentation .</p>
 <p>Example:</p>
 <pre class="prettyprint source lang-javascript"><code>import { CyberusKeyWidget, HTML5GeoProvider } from &quot;cyberuskey-widget&quot;;
 
 $(document).ready(() => {
-  const cyberusKeyButton = new CyberusKeyWidget({
-    theme: 'default',
-    serverUrl: API_URL
-  };
+const ckButton = new CyberusKeyWidget({
+   geoProvider: new HTML5GeoProvider(),
+   clientId: window.CyberusKey.CLIENT_ID,
+   redirectUri: window.CyberusKey.REDIRECT_URI,
+   state: window.CyberusKey.STATE,
+   nonce: window.CyberusKey.NONCE
+  });
 
-  cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+  cyberusKeyButton.create('.cyberus-key-widget-container');
 });
 </code></pre>
 
 <a name="CyberusKeyWidget+create"></a>
 
-### cyberusKeyWidget.create(containingElementSelector)
+### cyberusKeyWidget.create(containingElementClassName)
 <p>Creates a Cyberus Key button element in the DOM tree.</p>
 
 **Kind**: instance method of [<code>CyberusKeyWidget</code>](#CyberusKeyWidget)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| containingElementSelector | <code>string</code> | <p>Selector of a containing DOM element for the button.</p> |
+| containingElementClassName | <code>string</code> | <p>CSS class name of the containing DOM element for the Cyberus Key Widget.</p> |
 
 <a name="CyberusKeyWidget.CyberusKeyWidget"></a>
 
@@ -175,13 +196,15 @@ $(document).ready(() => {
 <a name="WidgetAnimation"></a>
 
 ## WidgetAnimation : <code>enum</code>
-<p>Defines the widget animation.</p>
+<p>Defines the widget animation.
+Use one of <code>None</code>, <code>Blinking</code>, <code>Waves</code>.</p>
 
 **Kind**: global enum  
+**Read only**: true  
 
 # Links
 
-CyberusKey SDK docs: https://github.com/CyberusLabs/cyberuskey-sdk/
+CyberusKey JavaScript SDK docs: https://github.com/CyberusLabs/cyberuskey-sdk/
 
 # License
 

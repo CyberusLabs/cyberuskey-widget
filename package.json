@@ -1,6 +1,6 @@
 {
   "name": "cyberuskey-widget",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Cyberus Key Widget is a button that help you to integrate with Cyberus Key Authentication Server.",
   "main": "dist/widget.js",
   "repository": {
@@ -12,12 +12,11 @@
   "scripts": {
     "build": "webpack",
     "build:watch": "webpack --watch",
-    "build:doc": "jsdoc2md --template README.hbs --files ./src/index.ts --configure ./jsdoc2md.json > ./README.md",
+    "build:doc": "jsdoc2md --template README.hbs --files ./src/*.ts --configure ./jsdoc2md.json > ./README.md",
     "build:all": "yarn build && yarn build:doc"
   },
   "dependencies": {
-    "cash-dom": "^4.1.4",
-    "cyberuskey-sdk": "^0.0.3"
+    "cyberuskey-sdk": "^0.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",

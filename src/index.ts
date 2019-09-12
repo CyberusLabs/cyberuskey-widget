@@ -1,27 +1,31 @@
-import { Cash, CashStatic, Selector } from 'cash-dom/dist/cash.d';
-import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter } from "cyberuskey-sdk";
+import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter } from 'cyberuskey-sdk';
 import './styles/widget.scss';
 
 
-const $: ((selector?: Selector, context?: Element | HTMLElement | Document | Cash) => Cash) & CashStatic = require('cash-dom');
 const widgetTemplate = require("./templates/widget.html")
-const widgetImages = {
-  'default': 'img/cyberus/cyberus_login_widget.png',
-  'eliot': 'img/eliot/eliot_login_widget_button.png'
-};
 
 
-export * from "cyberuskey-sdk";
+export * from 'cyberuskey-sdk';
 
 /**
  * Defines the widget animation.
+ * Use one of `None`, `Blinking`, `Waves`.
  *
- * @export
+ * @readonly
  * @enum {number}
  */
 export enum WidgetAnimation {
+  /**
+   * No animation.
+   */
   None = 0,
+  /**
+   * Logo is blinking.
+   */
   Blinking,
+  /**
+   * Logo "emits" the waves.
+   */
   Waves
 }
 
@@ -74,7 +78,7 @@ export class WidgetOptions {
 
   /**
    * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
-   * For a web browser use HTML5GeoProvider.
+   * For a web browser use [HTML5GeoProvider](https://github.com/CyberusLabs/cyberuskey-sdk/#html5geoprovider).
    * Geolocalization measurement can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
    * Those measurements can be used also to general improvement of the security.
    *
@@ -104,12 +108,13 @@ export class WidgetOptions {
    * @type {string}
    * @memberof WidgetOptions
    */
-  readonly nonce?: string  = null;
+  readonly nonce?: string = null;
 }
 
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
  * 
+ * If you miss some docs, try find them [here](https://github.com/CyberusLabs/cyberuskey-sdk/#CyberusKeyAPI), in Cyberus Key JavaScript SDK documentation .
  * 
  * Example:
  * 
@@ -117,12 +122,15 @@ export class WidgetOptions {
  * import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
  * 
  * $(document).ready(() => {
- *   const cyberusKeyButton = new CyberusKeyWidget({
- *     theme: 'default',
- *     serverUrl: API_URL
- *   };
+ * const ckButton = new CyberusKeyWidget({
+ *    geoProvider: new HTML5GeoProvider(),
+ *    clientId: window.CyberusKey.CLIENT_ID,
+ *    redirectUri: window.CyberusKey.REDIRECT_URI,
+ *    state: window.CyberusKey.STATE,
+ *    nonce: window.CyberusKey.NONCE
+ *   });
  * 
- *   cyberusKeyButton.create('.cyberus-key-widget-container', CLIENT_ID, REDIRECT_URI, new HTML5GeoProvider());
+ *   cyberusKeyButton.create('.cyberus-key-widget-container');
  * });
  * ```
  *
@@ -139,8 +147,9 @@ export class CyberusKeyWidget {
   private _nonce: string;
   private _initialized: boolean;
   private _inProgress: boolean;
-  private _containingElementSelector: string;
+  private _containingElementClassName: string;
   private _animation: WidgetAnimation;
+  private _containerElement: Element;
 
   /**
    * Creates an instance of CyberusKeyWidget.
@@ -155,9 +164,9 @@ export class CyberusKeyWidget {
 
     const theme = options.theme || 'default';
     const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
-    const animation = options.animation || WidgetAnimation.Blinking;
+    const animation = options.animation || WidgetAnimation.Waves;
 
-    if (!Object.keys(widgetImages).includes(theme)) {
+    if (!['default', 'eliot'].includes(theme)) {
       throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
     }
 
@@ -176,15 +185,15 @@ export class CyberusKeyWidget {
   /**
    * Creates a Cyberus Key button element in the DOM tree.
    *
-   * @param {string} containingElementSelector Selector of a containing DOM element for the button.
+   * @param {string} containingElementClassName CSS class name of the containing DOM element for the Cyberus Key Widget.
    * @memberof CyberusKeyWidget
    */
-  create(containingElementSelector: string): void {
+  create(containingElementClassName: string): void {
     if (this._initialized) {
       throw new Error(`Widget is already initialized.`);
     }
 
-    this._containingElementSelector = containingElementSelector;
+    this._containingElementClassName = containingElementClassName;
 
     const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
     const widgetHtml = widgetTemplate
@@ -192,8 +201,7 @@ export class CyberusKeyWidget {
       .replace(/{{theme}}/g, this._theme)
       .replace(/{{loginText}}/g, buttonText);
 
-    $(widgetHtml).appendTo(containingElementSelector);
-    $(this._getElement('.login-button-container .login-button')).on('click', this._loginButtonClick.bind(this));
+    this._createButton(widgetHtml, containingElementClassName);
 
     this._initialized = true;
   }
@@ -240,46 +248,42 @@ export class CyberusKeyWidget {
     return (new URL(path, this._serverUrl)).href;
   }
 
-  _getElement(selector: string) {
-    return $(`${this._containingElementSelector} ${selector}`);
-  }
-
   _loading() {
-    this._getElement('.lds-ring').addClass('enabled');
+    this._addClass('lds-ring', 'enabled');
     this._disable();
   }
 
   _stopLoading() {
     this._enable();
-    this._getElement('.lds-ring').removeClass('enabled');
+    this._removeClass('lds-ring', 'enabled');
   }
 
   _disable() {
-    this._getElement('.login-button').addClass('disabled');
+    this._addClass('login-button', 'disabled');
   }
 
   _enable() {
-    this._getElement('.login-button').removeClass('disabled');
+    this._removeClass('login-button', 'disabled');
   }
 
   _blink() {
-    this._getElement('.login-button-icon').addClass('blinking');
+    this._addClass('login-button-icon', 'blinking');
   }
 
   _stopBlinking() {
-    this._getElement('.login-button-icon').removeClass('blinking');
+    this._removeClass('login-button-icon', 'blinking');
   }
 
   _waves() {
-    this._getElement('.lds-ripple').addClass('enabled');
+    this._addClass('lds-ripple', 'enabled');
   }
 
   _stopWaves() {
-    this._getElement('.lds-ripple').removeClass('enabled');
+    this._removeClass('lds-ripple', 'enabled');
   }
 
   _animate() {
-    this._getElement('.login-button').addClass('blocked');
+    this._addClass('login-button', 'blocked');
 
     if (this._animation === WidgetAnimation.Blinking) {
       this._blink();
@@ -289,12 +293,40 @@ export class CyberusKeyWidget {
   }
 
   _stopAnimation() {
-    this._getElement('.login-button').removeClass('blocked');
+    this._removeClass('login-button', 'blocked');
 
     if (this._animation === WidgetAnimation.Blinking) {
       this._stopBlinking();
     } else if (this._animation === WidgetAnimation.Waves) {
       this._stopWaves();
     }
+  }
+
+  _createButton(template: string, containerClassName: string) {
+    const containers = document.getElementsByClassName(containerClassName);
+
+    if (containers.length !== 1) {
+      throw new Error(`Can't find matching element for CSS class: ${containerClassName} or there's more than one match.`);
+    }
+
+    containers[0].innerHTML = template;
+
+    const loginButtonElements = containers[0].getElementsByClassName('login-button');
+
+    if (loginButtonElements.length !== 1) {
+      throw new Error('Can\'t attach an event to the Cyberus Key Widget.');
+    }
+
+    loginButtonElements[0].addEventListener('click', this._loginButtonClick.bind(this));
+
+    this._containerElement = containers[0];
+  }
+
+  _addClass(elementClassName: string, classNameToAdd: string) {
+    this._containerElement.getElementsByClassName(elementClassName)[0].classList.add(classNameToAdd);
+  }
+
+  _removeClass(elementClassName: string, classNameToAdd: string) {
+    this._containerElement.getElementsByClassName(elementClassName)[0].classList.remove(classNameToAdd);
   }
 }
