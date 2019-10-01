@@ -971,6 +971,9 @@ const geo_1 = __webpack_require__(4);
  * @implements {GeoProvider}
  */
 class HTML5GeoProvider {
+    constructor(navigator = window.navigator) {
+        this._navigator = navigator;
+    }
     /**
      * Gets a geolocalization measurement.
      *
@@ -979,13 +982,21 @@ class HTML5GeoProvider {
      */
     getGeo() {
         return __awaiter(this, void 0, void 0, function* () {
-            const { coords } = yield this._getGeo();
+            let result = null;
+            try {
+                result = yield this._getGeo();
+            }
+            catch (_a) {
+                // E.g. user didn't agreed on geolicalization.
+                return null;
+            }
+            const { coords } = result;
             return new geo_1.Geolocation(coords.latitude, coords.longitude, coords.accuracy);
         });
     }
     _getGeo() {
         return new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+            this._navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
         });
     }
 }
