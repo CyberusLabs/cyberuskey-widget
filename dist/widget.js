@@ -629,7 +629,7 @@ exports.WidgetOptions = WidgetOptions;
  *    nonce: window.CyberusKey.NONCE
  *   });
  *
- *   cyberusKeyButton.create('.cyberus-key-widget-container');
+ *   cyberusKeyButton.create('cyberus-key-widget-container');
  * });
  * ```
  *

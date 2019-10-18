@@ -45,15 +45,15 @@ And then you can embed the button on your web page:
 import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
 
 $(document).ready(() => {
-  const ckButton = new CyberusKeyWidget({
-    geoProvider: new HTML5GeoProvider(),
-    clientId: window.CyberusKey.CLIENT_ID,
-    redirectUri: window.CyberusKey.REDIRECT_URI,
-    state: window.CyberusKey.STATE,
-    nonce: window.CyberusKey.NONCE
-  });
+const ckButton = new CyberusKeyWidget({
+geoProvider: new HTML5GeoProvider(),
+clientId: window.CyberusKey.CLIENT_ID,
+redirectUri: window.CyberusKey.REDIRECT_URI,
+state: window.CyberusKey.STATE,
+nonce: window.CyberusKey.NONCE
+});
 
-  cyberusKeyButton.create('.cyberus-key-widget-container');
+cyberusKeyButton.create('cyberus-key-widget-container');
 });
 ```
 
