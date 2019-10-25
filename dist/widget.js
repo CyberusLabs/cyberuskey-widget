@@ -313,17 +313,18 @@ class CyberusKeyAPI {
      *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
      *    The value is passed through unmodified from the Authentication Request to the ID Token.
      *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     * @param {string} [responseType='code'] OpenId response type. The default is `code` (Code Flow, involving the front-channel and backchannel).
      * @returns OpenID's Authentication endpoint URL
      * @throws InvalidRedirectUriError, InvalidClientError, ResourceNotFoundError
      * @memberof CyberusKeyAPI
      */
-    getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce) {
+    getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce, responseType = 'code') {
         const data = {
             session_id: session.sessionId,
             client_id: clientId,
             scope: scope.getValue(),
             redirect_uri: redirectUri,
-            response_type: 'code'
+            response_type: responseType
         };
         if (state) {
             data['state'] = state;
@@ -355,17 +356,18 @@ class CyberusKeyAPI {
      *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
      *    The value is passed through unmodified from the Authentication Request to the ID Token.
      *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     * @param {string} [responseType='code'] OpenId response type. The default is `code` (Code Flow, involving the front-channel and backchannel).
      * @returns {Promise<void>}
      * @memberof CyberusKeyAPI
      */
-    authenticate(clientId, redirectUri, scope, soundEmitter, navigator, state, nonce) {
+    authenticate(clientId, redirectUri, scope, soundEmitter, navigator, state, nonce, responseType = 'code') {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._geoProvider && !this._cachedGeo) {
                 this._cachedGeo = yield this._geoProvider.getGeo();
             }
             const session = yield this.createSession(clientId, this._cachedGeo);
             const sound = yield this.getOTPSound(session);
-            const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce);
+            const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce, responseType);
             console.info(`Navigating to ${authenticateUrl}.`);
             yield navigator.navigate(authenticateUrl);
             yield this._timeout(1000);
@@ -390,17 +392,18 @@ class CyberusKeyAPI {
      *    String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
      *    The value is passed through unmodified from the Authentication Request to the ID Token.
      *    Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.
+     * @param {string} [responseType='code'] OpenId response type. The default is `code` (Code Flow, involving the front-channel and backchannel).
      * @returns {Promise<void>}
      * @memberof CyberusKeyAPI
      */
-    navigateAndGetTheSound(clientId, redirectUri, scope, navigator, state, nonce) {
+    navigateAndGetTheSound(clientId, redirectUri, scope, navigator, state, nonce, responseType = 'code') {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._geoProvider && !this._cachedGeo) {
                 this._cachedGeo = yield this._geoProvider.getGeo();
             }
             const session = yield this.createSession(clientId, this._cachedGeo);
             const sound = yield this.getOTPSound(session);
-            const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce);
+            const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce, responseType);
             console.info(`Navigating to ${authenticateUrl}.`);
             yield navigator.navigate(authenticateUrl);
             yield this._timeout(this._delayMs);
@@ -607,6 +610,13 @@ class WidgetOptions {
          * @memberof WidgetOptions
          */
         this.nonce = null;
+        /**
+         * OpenId's response type. By default it's `code` what means OpenId Code Flow.
+         *
+         * @type {string}
+         * @memberof WidgetOptions
+         */
+        this.responseType = 'code';
     }
 }
 exports.WidgetOptions = WidgetOptions;
@@ -658,6 +668,7 @@ class CyberusKeyWidget {
         this._geoProvider = options.geoProvider;
         this._state = options.state;
         this._nonce = options.nonce;
+        this._responseType = options.responseType || 'code';
         this._serverUrl = new URL(serverUrl);
         this._theme = theme;
         this._animation = animation;
@@ -694,7 +705,7 @@ class CyberusKeyWidget {
             const soundEmitter = new cyberuskey_sdk_1.WebAudioSoundEmitter();
             this._loading();
             try {
-                const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce);
+                const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce, this._responseType);
                 this._stopLoading();
                 this._animate();
                 yield soundEmitter.emit(sound);
@@ -987,7 +998,7 @@ class HTML5GeoProvider {
                 result = yield this._getGeo();
             }
             catch (_a) {
-                // E.g. user didn't agreed on geolicalization.
+                // E.g. user didn't agree on geolicalization.
                 return null;
             }
             const { coords } = result;

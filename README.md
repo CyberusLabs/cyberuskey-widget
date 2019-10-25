@@ -83,6 +83,7 @@ Widget uses Cyberus Key JavaScript SDK, here you have the [documentation](https:
     * [.geoProvider](#WidgetOptions.geoProvider) : <code>GeoProvider</code>
     * [.state](#WidgetOptions.state) : <code>string</code>
     * [.nonce](#WidgetOptions.nonce) : <code>string</code>
+    * [.responseType](#WidgetOptions.responseType) : <code>string</code>
 
 <a name="new_WidgetOptions_new"></a>
 
@@ -132,6 +133,12 @@ The state parameter is a string so you can encode any other information in it.</
 <p>String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
 The value is passed through unmodified from the Authentication Request to the ID Token.
 Sufficient entropy MUST be present in the nonce values used to prevent attackers from guessing values.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.responseType"></a>
+
+### WidgetOptions.responseType : <code>string</code>
+<p>OpenId's response type. By default it's <code>code</code> what means OpenId Code Flow.</p>
 
 **Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
 <a name="CyberusKeyWidget"></a>

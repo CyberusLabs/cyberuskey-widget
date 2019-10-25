@@ -109,6 +109,14 @@ export class WidgetOptions {
    * @memberof WidgetOptions
    */
   readonly nonce?: string = null;
+
+  /**
+   * OpenId's response type. By default it's `code` what means OpenId Code Flow.
+   *
+   * @type {string}
+   * @memberof WidgetOptions
+   */
+  readonly responseType: string = 'code';
 }
 
 /**
@@ -150,6 +158,7 @@ export class CyberusKeyWidget {
   private _containingElementClassName: string;
   private _animation: WidgetAnimation;
   private _containerElement: Element;
+  private _responseType: string;
 
   /**
    * Creates an instance of CyberusKeyWidget.
@@ -175,6 +184,7 @@ export class CyberusKeyWidget {
     this._geoProvider = options.geoProvider;
     this._state = options.state;
     this._nonce = options.nonce;
+    this._responseType = options.responseType || 'code';
     this._serverUrl = new URL(serverUrl);
     this._theme = theme;
     this._animation = animation;
@@ -226,7 +236,8 @@ export class CyberusKeyWidget {
         scope,
         new RedirectNavigator(),
         this._state,
-        this._nonce);
+        this._nonce,
+        this._responseType);
 
       this._stopLoading();
       this._animate();

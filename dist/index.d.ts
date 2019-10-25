@@ -95,6 +95,13 @@ export declare class WidgetOptions {
      * @memberof WidgetOptions
      */
     readonly nonce?: string;
+    /**
+     * OpenId's response type. By default it's `code` what means OpenId Code Flow.
+     *
+     * @type {string}
+     * @memberof WidgetOptions
+     */
+    readonly responseType: string;
 }
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
@@ -135,6 +142,7 @@ export declare class CyberusKeyWidget {
     private _containingElementClassName;
     private _animation;
     private _containerElement;
+    private _responseType;
     /**
      * Creates an instance of CyberusKeyWidget.
      *
