@@ -659,7 +659,7 @@ class CyberusKeyWidget {
         }
         const theme = options.theme || 'default';
         const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
-        const animation = options.animation || WidgetAnimation.Waves;
+        const animation = options.animation || WidgetAnimation.Blinking;
         if (!['default', 'eliot'].includes(theme)) {
             throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
         }
@@ -671,7 +671,7 @@ class CyberusKeyWidget {
         this._responseType = options.responseType || 'code';
         this._serverUrl = new URL(serverUrl);
         this._theme = theme;
-        this._animation = animation;
+        this._animation = animation || WidgetAnimation.Blinking;
         this._initialized = false;
         this._inProgress = false;
     }
@@ -685,7 +685,6 @@ class CyberusKeyWidget {
         if (this._initialized) {
             throw new Error(`Widget is already initialized.`);
         }
-        this._containingElementClassName = containingElementClassName;
         const buttonText = this._theme === 'eliot' ? 'LOGIN WITH ELIOT PRO' : 'Login with <b>Cyberus</b>Key';
         const widgetHtml = widgetTemplate
             .replace(/{{lostDeviceUrl}}/g, this._getUrl('dashboard'))
