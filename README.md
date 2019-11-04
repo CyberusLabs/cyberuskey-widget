@@ -29,7 +29,7 @@ yarn add cyberuskey-widget
 
 You can also get a minified file from JSDelivr's CDN:
 ```
-<script src="https://cdn.jsdelivr.net/npm/cyberuskey-widget@0.0.5/dist/widget.min.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/cyberuskey-widget@0.0.12/dist/widget.min.js" type="text/javascript"></script>
 
 <script type="text/javascript">
   var CyberusKeyWidgetNamespace = window['cyberuskey-widget'];
