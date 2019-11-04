@@ -63,7 +63,7 @@ export declare class WidgetOptions {
      * @type {WidgetAnimation}
      * @memberof WidgetOptions
      */
-    readonly animation: WidgetAnimation;
+    readonly animation?: WidgetAnimation;
     /**
      * Provider of a geolocalization. `If passed, then geolocalization measurement is taken`.
      * For a web browser use [HTML5GeoProvider](https://github.com/CyberusLabs/cyberuskey-sdk/#html5geoprovider).
@@ -139,7 +139,6 @@ export declare class CyberusKeyWidget {
     private _nonce;
     private _initialized;
     private _inProgress;
-    private _containingElementClassName;
     private _animation;
     private _containerElement;
     private _responseType;

@@ -4,8 +4,8 @@ const TerserPlugin = require('terser-webpack-plugin');
 module.exports = {
   mode: 'production',
   entry: {
-    'widget': './src/index.ts',
-    'widget.min': './src/index.ts',
+    'widget': './src/widget.ts',
+    'widget.min': './src/widget.ts',
   },
   devtool: 'source-map',
   output: {
