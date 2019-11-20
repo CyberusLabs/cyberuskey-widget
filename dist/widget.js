@@ -1,3 +1,5 @@
+// import { AudioContext, OfflineAudioContext } from 'standardized-audio-context';
+
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -287,7 +289,7 @@ class CyberusKeyAPI {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield fetch(this._getUrl(`sessions/${session.sessionId}`), {
                 headers: {
-                    'Accept': 'audio/mpeg',
+                    'Accept': 'audio/ogg',
                     'Content-Type': 'text/plain'
                 }
             });
@@ -821,7 +823,8 @@ class WebAudioSoundEmitter {
      */
     emit(sound) {
         return __awaiter(this, void 0, void 0, function* () {
-            let context;
+              const AudioContext = window.AudioContext || window.webkitAudioContext;
+              let context;
             try {
                 context = new AudioContext();
             }
@@ -829,9 +832,14 @@ class WebAudioSoundEmitter {
                 console.error('AudioContext is not supported.');
                 throw e;
             }
-            const audioBuffer = yield context.decodeAudioData(sound);
             const source = context.createBufferSource();
-            source.buffer = audioBuffer;
+
+            context.decodeAudioData(sound, (decodedData) => (
+                source.buffer = decodedData)
+              ,
+              (error) =>
+                console.error("Error with decoding audio data" + error.err)
+            );
             source.connect(context.destination);
             yield (new Promise((resolve) => {
                 source.onended = resolve;
