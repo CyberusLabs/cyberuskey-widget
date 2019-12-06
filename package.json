@@ -16,7 +16,7 @@
     "build:all": "yarn build && yarn build:doc"
   },
   "dependencies": {
-    "cyberuskey-sdk": "^0.0.8"
+    "cyberuskey-sdk": "^0.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
