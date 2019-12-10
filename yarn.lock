@@ -1727,10 +1727,10 @@ currently-unhandled@^0.4.1:
   dependencies:
     array-find-index "^1.0.1"
 
-cyberuskey-sdk@^0.0.8:
-  version "0.0.8"
-  resolved "https://registry.yarnpkg.com/cyberuskey-sdk/-/cyberuskey-sdk-0.0.8.tgz#3d29aa0ba48a1576007dff39fb5ab259259b096e"
-  integrity sha512-UNjLI5pC0ciSLJvKt8VgpqkJu8MVGKsJbYkdZfKsircAtphLKWrSFeB5lLs+HHX7+BxN9blxgNRED+uqzu0Fsw==
+cyberuskey-sdk@^0.0.9:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/cyberuskey-sdk/-/cyberuskey-sdk-0.0.9.tgz#c280983d6e7fc22d3f74f1d2e9ba41ea7d66eb87"
+  integrity sha512-AdZwaoejbusjq0YB6nzwpj3nHQBWTXsZac+6Yg9zaq+o4eGCVS1mDc8nZhUmNXwa140B9Tva9+3E6h/4bh9ELg==
 
 cyclist@^1.0.1:
   version "1.0.1"
