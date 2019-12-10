@@ -804,6 +804,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const errors_1 = __webpack_require__(0);
 /**
  * Class uses a HTML5's AudioContext interface to play a sound.
  *
@@ -823,19 +824,19 @@ class WebAudioSoundEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             let context;
             try {
-                context = new AudioContext();
+                context = new (window['AudioContext'] || window['webkitAudioContext'])();
             }
-            catch (e) {
-                console.error('AudioContext is not supported.');
-                throw e;
+            catch (_a) {
+                throw new errors_1.OTPGenerationError('otp_generation_failure', 'AudioContext is not supported');
             }
-            const audioBuffer = yield context.decodeAudioData(sound);
             const source = context.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(context.destination);
+            context.decodeAudioData(sound, (decodedData) => {
+                source.buffer = decodedData;
+                source.connect(context.destination);
+                source.start(0);
+            });
             yield (new Promise((resolve) => {
                 source.onended = resolve;
-                source.start(0);
             }));
         });
     }
@@ -981,7 +982,15 @@ const geo_1 = __webpack_require__(4);
  * @implements {GeoProvider}
  */
 class HTML5GeoProvider {
-    constructor(navigator = window.navigator) {
+    /**
+     * Creates an instance of HTML5GeoProvider.
+     *
+     * @param {boolean} [enableHighAccuracy=false]  Forces high accuracy of the geolocation. It may take longer.
+     * @param {Navigator} [navigator=window.navigator]
+     * @memberof HTML5GeoProvider
+     */
+    constructor(enableHighAccuracy = false, navigator = window.navigator) {
+        this._enableHighAccuracy = enableHighAccuracy;
         this._navigator = navigator;
     }
     /**
@@ -994,7 +1003,7 @@ class HTML5GeoProvider {
         return __awaiter(this, void 0, void 0, function* () {
             let result = null;
             try {
-                result = yield this._getGeo();
+                result = yield this._getGeo(this._enableHighAccuracy);
             }
             catch (_a) {
                 // E.g. user didn't agree on geolicalization.
@@ -1004,9 +1013,10 @@ class HTML5GeoProvider {
             return new geo_1.Geolocation(coords.latitude, coords.longitude, coords.accuracy);
         });
     }
-    _getGeo() {
+    _getGeo(enableHighAccuracy) {
         return new Promise((resolve, reject) => {
-            this._navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+            console.log(`enableHighAccuracy: ${enableHighAccuracy}`);
+            this._navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy });
         });
     }
 }
