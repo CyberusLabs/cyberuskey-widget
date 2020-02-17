@@ -66,7 +66,7 @@ export class WidgetOptions {
    * @type {string}
    * @memberof WidgetOptions
    */
-  readonly serverUrl: string = 'https://auth-server-demo.cyberuslabs.net';
+  readonly serverUrl: string = 'https://production-api.cyberuskey.com';
 
   /**
    * Animation of the widget applied during a sound transmission.
@@ -171,7 +171,7 @@ export class CyberusKeyWidget {
     }
 
     const theme = options.theme || 'default';
-    const serverUrl = options.serverUrl || 'https://auth-server-demo.cyberuslabs.net';
+    const serverUrl = options.serverUrl || 'https://production-api.cyberuskey.com';
     const animation = options.animation || WidgetAnimation.Blinking;
 
     if (!['default', 'eliot'].includes(theme)) {
