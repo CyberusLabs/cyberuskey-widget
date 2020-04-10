@@ -84,6 +84,8 @@ Widget uses Cyberus Key JavaScript SDK, here you have the [documentation](https:
     * [.state](#WidgetOptions.state) : <code>string</code>
     * [.nonce](#WidgetOptions.nonce) : <code>string</code>
     * [.responseType](#WidgetOptions.responseType) : <code>string</code>
+    * [.autoplay](#WidgetOptions.autoplay) : <code>boolean</code>
+    * [.fullOpenIdLogin](#WidgetOptions.fullOpenIdLogin) : <code>boolean</code>
 
 <a name="new_WidgetOptions_new"></a>
 
@@ -139,6 +141,20 @@ Sufficient entropy MUST be present in the nonce values used to prevent attackers
 
 ### WidgetOptions.responseType : <code>string</code>
 <p>OpenId's response type. By default it's <code>code</code> what means OpenId Code Flow.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.autoplay"></a>
+
+### WidgetOptions.autoplay : <code>boolean</code>
+<p>Determines whether the login process will be done automatically when the button is ready.</p>
+
+**Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
+<a name="WidgetOptions.fullOpenIdLogin"></a>
+
+### WidgetOptions.fullOpenIdLogin : <code>boolean</code>
+<p>If set to <code>true</code>, then the login process will be done through the Cyberus Key Dashboard.
+So, you'll be redirected to the other page to login.
+If it's <code>false</code>, then the login goes directly to the Cyberus Key API.</p>
 
 **Kind**: static property of [<code>WidgetOptions</code>](#WidgetOptions)  
 <a name="CyberusKeyWidget"></a>

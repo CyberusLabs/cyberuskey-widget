@@ -1,4 +1,4 @@
-import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter } from 'cyberuskey-sdk';
+import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter, LoginOptions } from 'cyberuskey-sdk';
 import './styles/widget.scss';
 
 
@@ -69,6 +69,24 @@ export class WidgetOptions {
   readonly serverUrl: string = 'https://production-api.cyberuskey.com';
 
   /**
+   * @param {OpenIdScopeParser} scope Each scope returns a set of user attributes, which are called claims.
+   *    Once the user authorizes the requested scopes, the claims are returned in an ID Token.
+   *    By default set to: `openid email`.
+   *
+   * @type {OpenIdScopeParser}
+   * @memberof WidgetOptions
+   */
+  readonly scope: OpenIdScopeParser;
+
+  /**
+   * The domain URL under which the Widget is embedded in. E.g. `https://your-company-inc.com`.
+   *
+   * @type {WidgetAnimation}
+   * @memberof WidgetOptions
+   */
+  readonly origin: string;
+
+  /**
    * Animation of the widget applied during a sound transmission.
    *
    * @type {WidgetAnimation}
@@ -117,6 +135,24 @@ export class WidgetOptions {
    * @memberof WidgetOptions
    */
   readonly responseType: string = 'code';
+
+  /**
+   * Determines whether the login process will be done automatically when the button is ready.
+   *
+   * @type {boolean}
+   * @memberof WidgetOptions
+   */
+  readonly autoplay: boolean = false;
+
+  /**
+   * If set to `true`, then the login process will be done through the Cyberus Key Dashboard.
+   * So, you'll be redirected to the other page to login.
+   * If it's `false`, then the login goes directly to the Cyberus Key API.
+   *
+   * @type {boolean}
+   * @memberof WidgetOptions
+   */
+  readonly fullOpenIdLogin: boolean = false;
 }
 
 /**
@@ -150,6 +186,7 @@ export class CyberusKeyWidget {
   private _theme: string;
   private _clientId: string;
   private _redirectUri: string;
+  private _scope: OpenIdScopeParser;
   private _geoProvider: GeoProvider
   private _state: string;
   private _nonce: string;
@@ -158,6 +195,9 @@ export class CyberusKeyWidget {
   private _animation: WidgetAnimation;
   private _containerElement: Element;
   private _responseType: string;
+  private _origin: string;
+  private _autoplay: boolean;
+  private _fullOpenIdLogin: boolean;
 
   /**
    * Creates an instance of CyberusKeyWidget.
@@ -170,16 +210,18 @@ export class CyberusKeyWidget {
       throw new Error('CyberusKeyWidget: Missing options(s).')
     }
 
-    const theme = options.theme || 'default';
+    let theme = options.theme || 'default';
     const serverUrl = options.serverUrl || 'https://production-api.cyberuskey.com';
     const animation = options.animation || WidgetAnimation.Blinking;
 
     if (!['default', 'eliot'].includes(theme)) {
-      throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
+      theme = 'default';
+      console.warn(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
     }
 
     this._clientId = options.clientId;
     this._redirectUri = options.redirectUri;
+    this._scope = options.scope || (new OpenIdScopeParser()).addEmail();
     this._geoProvider = options.geoProvider;
     this._state = options.state;
     this._nonce = options.nonce;
@@ -189,6 +231,9 @@ export class CyberusKeyWidget {
     this._animation = animation || WidgetAnimation.Blinking;
     this._initialized = false;
     this._inProgress = false;
+    this._origin = options.origin;
+    this._autoplay = options.autoplay;
+    this._fullOpenIdLogin = options.fullOpenIdLogin;
   }
 
   /**
@@ -232,6 +277,7 @@ export class CyberusKeyWidget {
         this._redirectUri,
         scope,
         new RedirectNavigator(),
+        this._origin,
         this._state,
         this._nonce,
         this._responseType);
@@ -250,6 +296,33 @@ export class CyberusKeyWidget {
 
     this._stopAnimation();
     this._loading();
+  }
+
+  async _loginThroughDashboard(_: MouseEvent) {
+    if (this._inProgress) {
+      return Promise.resolve();
+    }
+
+    this._inProgress = true;
+
+    const api = new CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
+
+    try {
+      await api.loginThroughCyberusKeyDashboard({
+        clientId: this._clientId,
+        redirectUri: this._redirectUri,
+        scope: this._scope,
+        navigator: new RedirectNavigator(),
+        state: this._state,
+        nonce: this._nonce,
+        responseType: this._responseType,
+        display: 'page',
+        prompt: 'login,none',
+        theme: this._theme
+      } as LoginOptions);
+    } finally {
+      this._inProgress = false;
+    }
   }
 
   _getUrl(path: string): string {
@@ -325,7 +398,17 @@ export class CyberusKeyWidget {
       throw new Error('Can\'t attach an event to the Cyberus Key Widget.');
     }
 
-    loginButtonElements[0].addEventListener('click', this._loginButtonClick.bind(this));
+    if (this._fullOpenIdLogin) {
+      loginButtonElements[0].addEventListener('click', this._loginThroughDashboard.bind(this));
+    } else {
+      loginButtonElements[0].addEventListener('click', this._loginButtonClick.bind(this));
+
+      if (this._autoplay) {
+        setImmediate(async () => {
+          await this._loginButtonClick();
+        });
+      }
+    }
 
     this._containerElement = containers[0];
   }
