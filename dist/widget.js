@@ -451,7 +451,9 @@ class CyberusKeyAPI {
                 scope: options.scope.getValue(),
                 redirect_uri: options.redirectUri,
                 response_type: options.responseType,
-                display: options.display,
+                state: options.state,
+                nonce: options.nonce,
+                display: options.display || 'page',
                 prompt: options.prompt,
                 theme: options.theme,
             };
@@ -461,7 +463,7 @@ class CyberusKeyAPI {
             if (options.nonce) {
                 data['nonce'] = options.nonce;
             }
-            const url = new URL(this._getUrl('authorize'));
+            const url = new URL(this._getUrl('authenticate'));
             Object.keys(data).forEach((parameterName) => {
                 url.searchParams.append(parameterName, data[parameterName]);
             });
