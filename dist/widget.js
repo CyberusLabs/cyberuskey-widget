@@ -91,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -185,6 +185,32 @@ exports.errorFactory = errorFactory;
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -193,35 +219,37 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(2));
-__export(__webpack_require__(6));
-__export(__webpack_require__(0));
-__export(__webpack_require__(7));
-__export(__webpack_require__(8));
 __export(__webpack_require__(3));
+__export(__webpack_require__(10));
+__export(__webpack_require__(0));
+__export(__webpack_require__(11));
+__export(__webpack_require__(12));
 __export(__webpack_require__(4));
-__export(__webpack_require__(9));
-const api_1 = __webpack_require__(2);
+__export(__webpack_require__(5));
+__export(__webpack_require__(13));
+__export(__webpack_require__(14));
+const api_1 = __webpack_require__(3);
 exports.default = api_1.CyberusKeyAPI;
 //# sourceMappingURL=index.js.map
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const errors_1 = __webpack_require__(0);
-const session_1 = __webpack_require__(3);
+const session_1 = __webpack_require__(4);
 /**
  * Cyberus Key API which allows you to do a delegate login with OpenId protocol.
  *
@@ -247,16 +275,20 @@ class CyberusKeyAPI {
      * @param {Geolocation} [geo] Give a value if you want to pass optional geolocation measurement.
      *    It can be later use to compare it against the mobile's measurement (if you have set `fail_on_geo_mismatch`).
      *    Those measurements can be used also to general improvement of the security.
+     * @param {string} [origin] The origin domain of the request being made. If `null` then the Referer header will be used.
      * @throws WrongJsonError, OpenApiError, ResourceNotFoundError, OTPGenerationError, UnknownError
      * @returns {Promise<Session>} The Cyberus Key session.
      * @memberof CyberusKeyAPI
      */
-    createSession(clientId, geo) {
+    createSession(clientId, geo, origin) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = { client_id: clientId };
             if (geo) {
                 data['lat'] = geo.latitude;
                 data['lng'] = geo.longitude;
+            }
+            if (origin) {
+                data['origin'] = origin;
             }
             const response = yield fetch(this._getUrl('sessions'), {
                 method: 'POST',
@@ -347,6 +379,7 @@ class CyberusKeyAPI {
      *    Once the user authorizes the requested scopes, the claims are returned in an ID Token.
      * @param {SoundEmitter} soundEmitter Interface which can play a sound.
      * @param {Navigator} navigator Class describes an action that will be done to Authentication URL. For browsers it will be a page redirection.
+     * @param {string} [origin] The origin domain of the request being made. If `null` then the Referer header will be used.
      * @param {string} [state]
      *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
      *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
@@ -360,12 +393,12 @@ class CyberusKeyAPI {
      * @returns {Promise<void>}
      * @memberof CyberusKeyAPI
      */
-    authenticate(clientId, redirectUri, scope, soundEmitter, navigator, state, nonce, responseType = 'code') {
+    authenticate(clientId, redirectUri, scope, soundEmitter, navigator, origin, state, nonce, responseType = 'code') {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._geoProvider && !this._cachedGeo) {
                 this._cachedGeo = yield this._geoProvider.getGeo();
             }
-            const session = yield this.createSession(clientId, this._cachedGeo);
+            const session = yield this.createSession(clientId, this._cachedGeo, origin);
             const sound = yield this.getOTPSound(session);
             const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce, responseType);
             console.info(`Navigating to ${authenticateUrl}.`);
@@ -383,6 +416,7 @@ class CyberusKeyAPI {
      * @param {OpenIdScopeParser} scope Each scope returns a set of user attributes, which are called claims.
      *    Once the user authorizes the requested scopes, the claims are returned in an ID Token.
      * @param {Navigator} navigator Class describes an action that will be done to Authentication URL. For browsers it will be a page redirection.
+     * @param {string} [origin] The origin domain of the request being made. If `null` then the Referer header will be used.
      * @param {string} [state]
      *    RECOMMENDED. Opaque value used to maintain state between the request and the callback. Typically, CSRF, XSRF mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
      *    The state parameter preserves some state object set by the client in the Authentication request and makes it available to the client in the response.
@@ -396,18 +430,45 @@ class CyberusKeyAPI {
      * @returns {Promise<void>}
      * @memberof CyberusKeyAPI
      */
-    navigateAndGetTheSound(clientId, redirectUri, scope, navigator, state, nonce, responseType = 'code') {
+    navigateAndGetTheSound(clientId, redirectUri, scope, navigator, origin, state, nonce, responseType = 'code') {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._geoProvider && !this._cachedGeo) {
                 this._cachedGeo = yield this._geoProvider.getGeo();
             }
-            const session = yield this.createSession(clientId, this._cachedGeo);
+            const session = yield this.createSession(clientId, this._cachedGeo, origin);
             const sound = yield this.getOTPSound(session);
             const authenticateUrl = this.getAuthenticationEndpointUrl(session, scope, clientId, redirectUri, state, nonce, responseType);
             console.info(`Navigating to ${authenticateUrl}.`);
             yield navigator.navigate(authenticateUrl);
             yield this._timeout(this._delayMs);
             return sound;
+        });
+    }
+    loginThroughCyberusKeyDashboard(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = {
+                client_id: options.clientId,
+                scope: options.scope.getValue(),
+                redirect_uri: options.redirectUri,
+                response_type: options.responseType,
+                state: options.state,
+                nonce: options.nonce,
+                display: options.display || 'page',
+                prompt: options.prompt,
+                theme: options.theme,
+            };
+            if (options.state) {
+                data['state'] = options.state;
+            }
+            if (options.nonce) {
+                data['nonce'] = options.nonce;
+            }
+            const url = new URL(this._getUrl('authenticate'));
+            Object.keys(data).forEach((parameterName) => {
+                url.searchParams.append(parameterName, data[parameterName]);
+            });
+            console.info(`Navigating to ${url.href}.`);
+            yield options.navigator.navigate(url.href);
         });
     }
     _getUrl(path) {
@@ -431,7 +492,7 @@ exports.CyberusKeyAPI = CyberusKeyAPI;
 //# sourceMappingURL=api.js.map
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -453,7 +514,7 @@ exports.Session = Session;
 //# sourceMappingURL=session.js.map
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -506,11 +567,11 @@ exports.Geolocation = Geolocation;
 //# sourceMappingURL=geo.js.map
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(setImmediate) {
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -524,10 +585,10 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-const cyberuskey_sdk_1 = __webpack_require__(1);
-__webpack_require__(10);
-const widgetTemplate = __webpack_require__(17);
-__export(__webpack_require__(1));
+const cyberuskey_sdk_1 = __webpack_require__(2);
+__webpack_require__(15);
+const widgetTemplate = __webpack_require__(22);
+__export(__webpack_require__(2));
 /**
  * Defines the widget animation.
  * Use one of `None`, `Blinking`, `Waves`.
@@ -617,6 +678,22 @@ class WidgetOptions {
          * @memberof WidgetOptions
          */
         this.responseType = 'code';
+        /**
+         * Determines whether the login process will be done automatically when the button is ready.
+         *
+         * @type {boolean}
+         * @memberof WidgetOptions
+         */
+        this.autoplay = false;
+        /**
+         * If set to `true`, then the login process will be done through the Cyberus Key Dashboard.
+         * So, you'll be redirected to the other page to login.
+         * If it's `false`, then the login goes directly to the Cyberus Key API.
+         *
+         * @type {boolean}
+         * @memberof WidgetOptions
+         */
+        this.fullOpenIdLogin = false;
     }
 }
 exports.WidgetOptions = WidgetOptions;
@@ -657,14 +734,16 @@ class CyberusKeyWidget {
         if (!options || !options.clientId || !options.redirectUri) {
             throw new Error('CyberusKeyWidget: Missing options(s).');
         }
-        const theme = options.theme || 'default';
+        let theme = options.theme || 'default';
         const serverUrl = options.serverUrl || 'https://production-api.cyberuskey.com';
         const animation = options.animation || WidgetAnimation.Blinking;
         if (!['default', 'eliot'].includes(theme)) {
-            throw new Error(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
+            theme = 'default';
+            console.warn(`CyberusKeyWidget: Theme "${theme}" is not supported.`);
         }
         this._clientId = options.clientId;
         this._redirectUri = options.redirectUri;
+        this._scope = options.scope || (new cyberuskey_sdk_1.OpenIdScopeParser()).addEmail();
         this._geoProvider = options.geoProvider;
         this._state = options.state;
         this._nonce = options.nonce;
@@ -674,6 +753,9 @@ class CyberusKeyWidget {
         this._animation = animation || WidgetAnimation.Blinking;
         this._initialized = false;
         this._inProgress = false;
+        this._origin = options.origin;
+        this._autoplay = options.autoplay;
+        this._fullOpenIdLogin = options.fullOpenIdLogin;
     }
     /**
      * Creates a Cyberus Key button element in the DOM tree.
@@ -704,7 +786,7 @@ class CyberusKeyWidget {
             const soundEmitter = new cyberuskey_sdk_1.WebAudioSoundEmitter();
             this._loading();
             try {
-                const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._state, this._nonce, this._responseType);
+                const sound = yield api.navigateAndGetTheSound(this._clientId, this._redirectUri, scope, new cyberuskey_sdk_1.RedirectNavigator(), this._origin, this._state, this._nonce, this._responseType);
                 this._stopLoading();
                 this._animate();
                 yield soundEmitter.emit(sound);
@@ -717,6 +799,32 @@ class CyberusKeyWidget {
             }
             this._stopAnimation();
             this._loading();
+        });
+    }
+    _loginThroughDashboard(_) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._inProgress) {
+                return Promise.resolve();
+            }
+            this._inProgress = true;
+            const api = new cyberuskey_sdk_1.CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
+            try {
+                yield api.loginThroughCyberusKeyDashboard({
+                    clientId: this._clientId,
+                    redirectUri: this._redirectUri,
+                    scope: this._scope,
+                    navigator: new cyberuskey_sdk_1.RedirectNavigator(),
+                    state: this._state,
+                    nonce: this._nonce,
+                    responseType: this._responseType,
+                    display: 'page',
+                    prompt: 'login,none',
+                    theme: this._theme
+                });
+            }
+            finally {
+                this._inProgress = false;
+            }
         });
     }
     _getUrl(path) {
@@ -776,7 +884,17 @@ class CyberusKeyWidget {
         if (loginButtonElements.length !== 1) {
             throw new Error('Can\'t attach an event to the Cyberus Key Widget.');
         }
-        loginButtonElements[0].addEventListener('click', this._loginButtonClick.bind(this));
+        if (this._fullOpenIdLogin) {
+            loginButtonElements[0].addEventListener('click', this._loginThroughDashboard.bind(this));
+        }
+        else {
+            loginButtonElements[0].addEventListener('click', this._loginButtonClick.bind(this));
+            if (this._autoplay) {
+                setImmediate(() => __awaiter(this, void 0, void 0, function* () {
+                    yield this._loginButtonClick();
+                }));
+            }
+        }
         this._containerElement = containers[0];
     }
     _addClass(elementClassName, classNameToAdd) {
@@ -788,18 +906,473 @@ class CyberusKeyWidget {
 }
 exports.CyberusKeyWidget = CyberusKeyWidget;
 
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7).setImmediate))
 
 /***/ }),
-/* 6 */
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !== "undefined" && global) ||
+            (typeof self !== "undefined" && self) ||
+            window;
+var apply = Function.prototype.apply;
+
+// DOM APIs, for completeness
+
+exports.setTimeout = function() {
+  return new Timeout(apply.call(setTimeout, scope, arguments), clearTimeout);
+};
+exports.setInterval = function() {
+  return new Timeout(apply.call(setInterval, scope, arguments), clearInterval);
+};
+exports.clearTimeout =
+exports.clearInterval = function(timeout) {
+  if (timeout) {
+    timeout.close();
+  }
+};
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+Timeout.prototype.close = function() {
+  this._clearFn.call(scope, this._id);
+};
+
+// Does not start the time, just sets up the members needed.
+exports.enroll = function(item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function(item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function(item) {
+  clearTimeout(item._idleTimeoutId);
+
+  var msecs = item._idleTimeout;
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout)
+        item._onTimeout();
+    }, msecs);
+  }
+};
+
+// setimmediate attaches itself to the global object
+__webpack_require__(8);
+// On some exotic environments, it's not clear which object `setimmediate` was
+// able to install onto.  Search each possibility in the same order as the
+// `setimmediate` library.
+exports.setImmediate = (typeof self !== "undefined" && self.setImmediate) ||
+                       (typeof global !== "undefined" && global.setImmediate) ||
+                       (this && this.setImmediate);
+exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
+                         (typeof global !== "undefined" && global.clearImmediate) ||
+                         (this && this.clearImmediate);
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(1)))
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
+    "use strict";
+
+    if (global.setImmediate) {
+        return;
+    }
+
+    var nextHandle = 1; // Spec says greater than zero
+    var tasksByHandle = {};
+    var currentlyRunningATask = false;
+    var doc = global.document;
+    var registerImmediate;
+
+    function setImmediate(callback) {
+      // Callback can either be a function or a string
+      if (typeof callback !== "function") {
+        callback = new Function("" + callback);
+      }
+      // Copy function arguments
+      var args = new Array(arguments.length - 1);
+      for (var i = 0; i < args.length; i++) {
+          args[i] = arguments[i + 1];
+      }
+      // Store and register the task
+      var task = { callback: callback, args: args };
+      tasksByHandle[nextHandle] = task;
+      registerImmediate(nextHandle);
+      return nextHandle++;
+    }
+
+    function clearImmediate(handle) {
+        delete tasksByHandle[handle];
+    }
+
+    function run(task) {
+        var callback = task.callback;
+        var args = task.args;
+        switch (args.length) {
+        case 0:
+            callback();
+            break;
+        case 1:
+            callback(args[0]);
+            break;
+        case 2:
+            callback(args[0], args[1]);
+            break;
+        case 3:
+            callback(args[0], args[1], args[2]);
+            break;
+        default:
+            callback.apply(undefined, args);
+            break;
+        }
+    }
+
+    function runIfPresent(handle) {
+        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
+        // So if we're currently running a task, we'll need to delay this invocation.
+        if (currentlyRunningATask) {
+            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
+            // "too much recursion" error.
+            setTimeout(runIfPresent, 0, handle);
+        } else {
+            var task = tasksByHandle[handle];
+            if (task) {
+                currentlyRunningATask = true;
+                try {
+                    run(task);
+                } finally {
+                    clearImmediate(handle);
+                    currentlyRunningATask = false;
+                }
+            }
+        }
+    }
+
+    function installNextTickImplementation() {
+        registerImmediate = function(handle) {
+            process.nextTick(function () { runIfPresent(handle); });
+        };
+    }
+
+    function canUsePostMessage() {
+        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
+        // where `global.postMessage` means something completely different and can't be used for this purpose.
+        if (global.postMessage && !global.importScripts) {
+            var postMessageIsAsynchronous = true;
+            var oldOnMessage = global.onmessage;
+            global.onmessage = function() {
+                postMessageIsAsynchronous = false;
+            };
+            global.postMessage("", "*");
+            global.onmessage = oldOnMessage;
+            return postMessageIsAsynchronous;
+        }
+    }
+
+    function installPostMessageImplementation() {
+        // Installs an event handler on `global` for the `message` event: see
+        // * https://developer.mozilla.org/en/DOM/window.postMessage
+        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
+
+        var messagePrefix = "setImmediate$" + Math.random() + "$";
+        var onGlobalMessage = function(event) {
+            if (event.source === global &&
+                typeof event.data === "string" &&
+                event.data.indexOf(messagePrefix) === 0) {
+                runIfPresent(+event.data.slice(messagePrefix.length));
+            }
+        };
+
+        if (global.addEventListener) {
+            global.addEventListener("message", onGlobalMessage, false);
+        } else {
+            global.attachEvent("onmessage", onGlobalMessage);
+        }
+
+        registerImmediate = function(handle) {
+            global.postMessage(messagePrefix + handle, "*");
+        };
+    }
+
+    function installMessageChannelImplementation() {
+        var channel = new MessageChannel();
+        channel.port1.onmessage = function(event) {
+            var handle = event.data;
+            runIfPresent(handle);
+        };
+
+        registerImmediate = function(handle) {
+            channel.port2.postMessage(handle);
+        };
+    }
+
+    function installReadyStateChangeImplementation() {
+        var html = doc.documentElement;
+        registerImmediate = function(handle) {
+            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
+            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
+            var script = doc.createElement("script");
+            script.onreadystatechange = function () {
+                runIfPresent(handle);
+                script.onreadystatechange = null;
+                html.removeChild(script);
+                script = null;
+            };
+            html.appendChild(script);
+        };
+    }
+
+    function installSetTimeoutImplementation() {
+        registerImmediate = function(handle) {
+            setTimeout(runIfPresent, 0, handle);
+        };
+    }
+
+    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
+    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
+    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
+
+    // Don't get fooled by e.g. browserify environments.
+    if ({}.toString.call(global.process) === "[object process]") {
+        // For Node.js before 0.9
+        installNextTickImplementation();
+
+    } else if (canUsePostMessage()) {
+        // For non-IE10 modern browsers
+        installPostMessageImplementation();
+
+    } else if (global.MessageChannel) {
+        // For web workers, where supported
+        installMessageChannelImplementation();
+
+    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
+        // For IE 6–8
+        installReadyStateChangeImplementation();
+
+    } else {
+        // For older browsers
+        installSetTimeoutImplementation();
+    }
+
+    attachTo.setImmediate = setImmediate;
+    attachTo.clearImmediate = clearImmediate;
+}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(1), __webpack_require__(9)))
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -845,16 +1418,17 @@ exports.WebAudioSoundEmitter = WebAudioSoundEmitter;
 //# sourceMappingURL=webAudioSoundEmitter.js.map
 
 /***/ }),
-/* 7 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -893,7 +1467,7 @@ exports.RedirectNavigator = RedirectNavigator;
 //# sourceMappingURL=redirectNavigator.js.map
 
 /***/ }),
-/* 8 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -958,21 +1532,22 @@ exports.OpenIdScopeParser = OpenIdScopeParser;
 //# sourceMappingURL=scopeParser.js.map
 
 /***/ }),
-/* 9 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const geo_1 = __webpack_require__(4);
+const geo_1 = __webpack_require__(5);
 /**
  * Class provides a geolocalization measurement.
  * It uses a HTML5's `Geolocation.getCurrentPosition()` method.
@@ -1024,11 +1599,62 @@ exports.HTML5GeoProvider = HTML5GeoProvider;
 //# sourceMappingURL=html5GeoProvider.js.map
 
 /***/ }),
-/* 10 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var api = __webpack_require__(11);
-            var content = __webpack_require__(12);
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Login options.
+ *
+ * @export
+ * @class LoginOptions
+ */
+class LoginOptions {
+    constructor() {
+        /**
+         * @param {string} [responseType='code'] OpenId response type. The default is `code` (Code Flow, involving the front-channel and backchannel).
+         *
+         * @type {string}
+         * @memberof LoginOptions
+         */
+        this.responseType = 'code';
+        /**
+         * @param {string} display It specifies how the Authorization Server displays the authentication and consent user interface pages to the End-User.
+         *   Default and the only supported value is `page`.
+         *
+         * @type {string}
+         * @memberof LoginOptions
+         */
+        this.display = 'page';
+        /**
+         * @param {string} prompt Space delimited, case sensitive list of string values that specifies whether the Authorization Server
+         *   prompts the End-User for reauthentication and consent. The defined values are: `login`, `none`.
+         *   Default is `login,none`. Can't be changed for now.
+         *
+         * @type {string}
+         * @memberof LoginOptions
+         */
+        this.prompt = 'login,none';
+        /**
+         * Theme of the login page of Cyberus Key Dashboard. Default is `default`.
+         *
+         * @type {string}
+         * @memberof LoginOptions
+         */
+        this.theme = 'default';
+    }
+}
+exports.LoginOptions = LoginOptions;
+//# sourceMappingURL=loginOptions.js.map
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var api = __webpack_require__(16);
+            var content = __webpack_require__(17);
 
             content = content.__esModule ? content.default : content;
 
@@ -1050,7 +1676,7 @@ var exported = content.locals ? content.locals : {};
 module.exports = exported;
 
 /***/ }),
-/* 11 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1325,14 +1951,14 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 12 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Imports
-var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(13);
-var ___CSS_LOADER_GET_URL_IMPORT___ = __webpack_require__(14);
-var ___CSS_LOADER_URL_IMPORT_0___ = __webpack_require__(15);
-var ___CSS_LOADER_URL_IMPORT_1___ = __webpack_require__(16);
+var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(18);
+var ___CSS_LOADER_GET_URL_IMPORT___ = __webpack_require__(19);
+var ___CSS_LOADER_URL_IMPORT_0___ = __webpack_require__(20);
+var ___CSS_LOADER_URL_IMPORT_1___ = __webpack_require__(21);
 exports = ___CSS_LOADER_API_IMPORT___(false);
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = ___CSS_LOADER_GET_URL_IMPORT___(___CSS_LOADER_URL_IMPORT_0___);
 var ___CSS_LOADER_URL_REPLACEMENT_1___ = ___CSS_LOADER_GET_URL_IMPORT___(___CSS_LOADER_URL_IMPORT_1___);
@@ -1343,7 +1969,7 @@ module.exports = exports;
 
 
 /***/ }),
-/* 13 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1443,7 +2069,7 @@ function toComment(sourceMap) {
 }
 
 /***/ }),
-/* 14 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1483,22 +2109,25 @@ module.exports = function (url, options) {
 };
 
 /***/ }),
-/* 15 */
+/* 20 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M36.3,28.2a6.1,6.1,0,0,1-12.2,0,6.1,6.1,0,0,1,12.2,0Zm11,0h-11m8.6,0v4.7M17.7,48.2A23.1,23.1,0,0,1,6.8,28.7a23.2,23.2,0,0,1,13.9-21m20.4,7.4A18,18,0,0,0,30,11.3,17.6,17.6,0,0,0,12.2,28.8,17.6,17.6,0,0,0,30,46.2a17.3,17.3,0,0,0,8.5-2.1m-4.2-27a13.4,13.4,0,0,0-4-.6A12.4,12.4,0,0,0,17.7,28.8a12.2,12.2,0,0,0,2.3,7' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
 
 /***/ }),
-/* 16 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M19.1,49.9A24.8,24.8,0,0,1,22.3,6m22,8A19.1,19.1,0,1,0,32.4,47.8a18.6,18.6,0,0,0,9.1-2.3M37,16.2a16.2,16.2,0,0,0-4.4-.7,13.4,13.4,0,0,0-11.1,21M34.8,22.6a7.8,7.8,0,0,0-2.2-.3,6.7,6.7,0,0,0,0,13.4,7.8,7.8,0,0,0,2.2-.3M25.9,29h8.9' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
 
 /***/ }),
-/* 17 */
+/* 22 */
 /***/ (function(module, exports) {
 
-module.exports = "<div class=\"cyberuskey-widget\">\n  <div class=\"login-button-container\">\n    <div class=\"lds-ripple {{theme}}\">\n      <div></div>\n      <div></div>\n    </div>\n    <div class=\"lds-ring {{theme}}\">\n      <div></div>\n      <div></div>\n      <div></div>\n      <div></div>\n    </div>\n\n    <div class=\"login-button {{theme}}\">\n      <div class=\"login-button-icon\"></div>\n      <div class=\"login-button-vl\"></div>\n      <div class=\"login-button-text-container\">\n        <span class=\"login-buton-text\">{{loginText}}</span>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"lost-phone\">\n    Lost your phone? <a class='lock-now-link' href=\"{{lostDeviceUrl}}\" target=\"_parent\">Lock now</a>\n  </div>\n</div>";
+// Module
+var code = "<div class=cyberuskey-widget> <div class=login-button-container> <div class=\"lds-ripple {{theme}}\"> <div></div> <div></div> </div> <div class=\"lds-ring {{theme}}\"> <div></div> <div></div> <div></div> <div></div> </div> <div class=\"login-button {{theme}}\"> <div class=login-button-icon></div> <div class=login-button-vl></div> <div class=login-button-text-container> <span class=login-buton-text>{{loginText}}</span> </div> </div> </div> <div class=lost-phone> Lost your phone? <a class=lock-now-link href={{lostDeviceUrl}} target=_parent>Lock now</a> </div> </div>";
+// Exports
+module.exports = code;
 
 /***/ })
 /******/ ]);

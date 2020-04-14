@@ -1,6 +1,6 @@
 {
   "name": "cyberuskey-widget",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Cyberus Key Widget is a button that help you to integrate with Cyberus Key Authentication Server.",
   "main": "dist/widget.js",
   "repository": {
@@ -16,26 +16,26 @@
     "build:all": "yarn build && yarn build:doc"
   },
   "dependencies": {
-    "cyberuskey-sdk": "^0.0.10"
+    "cyberuskey-sdk": "^0.0.11"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-typescript": "^7.3.3",
-    "@types/node": "^12.7.2",
+    "@types/node": "^13.11.1",
     "css-loader": "^3.2.0",
-    "html-loader": "^0.5.5",
+    "html-loader": "^1.1.0",
     "jsdoc-babel": "^0.5.0",
     "jsdoc-to-markdown": "^5.0.0",
     "node-sass": "^4.12.0",
     "regenerator-runtime": "^0.13.3",
-    "sass-loader": "^7.3.1",
+    "sass-loader": "^8.0.2",
     "style-loader": "^1.0.0",
-    "svg-url-loader": "^3.0.1",
-    "terser-webpack-plugin": "^1.4.1",
+    "svg-url-loader": "5.0.0",
+    "terser-webpack-plugin": "^2.3.5",
     "ts-loader": "^6.0.4",
     "ts-node": "^8.3.0",
-    "tslint": "^5.19.0",
+    "tslint": "^6.1.1",
     "typescript": "^3.5.3",
     "webpack": "^4.39.3",
     "webpack-cli": "^3.3.7"

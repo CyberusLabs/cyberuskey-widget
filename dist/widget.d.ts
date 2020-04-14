@@ -1,4 +1,4 @@
-import { GeoProvider } from 'cyberuskey-sdk';
+import { GeoProvider, OpenIdScopeParser } from 'cyberuskey-sdk';
 import './styles/widget.scss';
 export * from 'cyberuskey-sdk';
 /**
@@ -58,6 +58,22 @@ export declare class WidgetOptions {
      */
     readonly serverUrl: string;
     /**
+     * @param {OpenIdScopeParser} scope Each scope returns a set of user attributes, which are called claims.
+     *    Once the user authorizes the requested scopes, the claims are returned in an ID Token.
+     *    By default set to: `openid email`.
+     *
+     * @type {OpenIdScopeParser}
+     * @memberof WidgetOptions
+     */
+    readonly scope: OpenIdScopeParser;
+    /**
+     * The domain URL under which the Widget is embedded in. E.g. `https://your-company-inc.com`.
+     *
+     * @type {WidgetAnimation}
+     * @memberof WidgetOptions
+     */
+    readonly origin: string;
+    /**
      * Animation of the widget applied during a sound transmission.
      *
      * @type {WidgetAnimation}
@@ -102,6 +118,22 @@ export declare class WidgetOptions {
      * @memberof WidgetOptions
      */
     readonly responseType: string;
+    /**
+     * Determines whether the login process will be done automatically when the button is ready.
+     *
+     * @type {boolean}
+     * @memberof WidgetOptions
+     */
+    readonly autoplay: boolean;
+    /**
+     * If set to `true`, then the login process will be done through the Cyberus Key Dashboard.
+     * So, you'll be redirected to the other page to login.
+     * If it's `false`, then the login goes directly to the Cyberus Key API.
+     *
+     * @type {boolean}
+     * @memberof WidgetOptions
+     */
+    readonly fullOpenIdLogin: boolean;
 }
 /**
  * Class represents a UI button that uses `cyberuskey-sdk` and allows to make a login with Cyberus Key Authentication Server.
@@ -134,6 +166,7 @@ export declare class CyberusKeyWidget {
     private _theme;
     private _clientId;
     private _redirectUri;
+    private _scope;
     private _geoProvider;
     private _state;
     private _nonce;
@@ -142,6 +175,9 @@ export declare class CyberusKeyWidget {
     private _animation;
     private _containerElement;
     private _responseType;
+    private _origin;
+    private _autoplay;
+    private _fullOpenIdLogin;
     /**
      * Creates an instance of CyberusKeyWidget.
      *
@@ -157,6 +193,7 @@ export declare class CyberusKeyWidget {
      */
     create(containingElementClassName: string): void;
     _loginButtonClick(): Promise<void>;
+    _loginThroughDashboard(_: MouseEvent): Promise<void>;
     _getUrl(path: string): string;
     _loading(): void;
     _stopLoading(): void;
