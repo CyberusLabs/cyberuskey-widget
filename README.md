@@ -46,16 +46,18 @@ import { CyberusKeyWidget, HTML5GeoProvider } from "cyberuskey-widget";
 
 $(document).ready(() => {
 const ckButton = new CyberusKeyWidget({
-geoProvider: new HTML5GeoProvider(),
-clientId: window.CyberusKey.CLIENT_ID,
-redirectUri: window.CyberusKey.REDIRECT_URI,
-state: window.CyberusKey.STATE,
-nonce: window.CyberusKey.NONCE
+  clientId: window.CyberusKey.CLIENT_ID,
+  redirectUri: window.CyberusKey.REDIRECT_URI,
+  fullOpenIdLogin: true,
+  state: window.CyberusKey.STATE,
+  nonce: window.CyberusKey.NONCE
 });
 
 cyberusKeyButton.create('cyberus-key-widget-container');
 });
 ```
+
+If `fullOpenIdLogin` is `true`, then a user will be redirected to cyberuskey.com to process the login. This is the recommended configuration. If it’s `false`, the login process is done only on your side and you will have to e.g. handle errors.
 
 # Documentation
 
@@ -180,15 +182,18 @@ If it's <code>false</code>, then the login goes directly to the Cyberus Key API.
 
 $(document).ready(() => {
 const ckButton = new CyberusKeyWidget({
-   geoProvider: new HTML5GeoProvider(),
    clientId: window.CyberusKey.CLIENT_ID,
    redirectUri: window.CyberusKey.REDIRECT_URI,
+   fullOpenIdLogin: true,
    state: window.CyberusKey.STATE,
    nonce: window.CyberusKey.NONCE
   });
 
   cyberusKeyButton.create('cyberus-key-widget-container');
 });
+
+If fullOpenIdLogin is true, then a user will be redirected to cyberuskey.com to process the login. This is the recommended configuration. If it’s false, the login process is done only on your side and you will have to e.g. handle errors.
+
 </code></pre>
 
 <a name="CyberusKeyWidget+create"></a>

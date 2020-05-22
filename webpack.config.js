@@ -13,7 +13,8 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
     library: 'cyberuskey-widget',
-    umdNamedDefine: true
+    umdNamedDefine: true,
+    globalObject: 'typeof(self) !== \'undefined\' ? self : this'
   },
   resolve: {
     extensions: ['.ts', '.js']

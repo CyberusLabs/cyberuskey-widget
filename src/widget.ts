@@ -1,8 +1,11 @@
 import { CyberusKeyAPI, GeoProvider, OpenIdScopeParser, RedirectNavigator, WebAudioSoundEmitter, LoginOptions } from 'cyberuskey-sdk';
-import './styles/widget.scss';
 
+let widgetTemplate = '';
 
-const widgetTemplate = require("./templates/widget.html")
+if (typeof(window) !== 'undefined') {
+  require("./styles/widget.scss");
+  widgetTemplate = require("./templates/widget.html");
+}
 
 
 export * from 'cyberuskey-sdk';
@@ -167,15 +170,18 @@ export class WidgetOptions {
  * 
  * $(document).ready(() => {
  * const ckButton = new CyberusKeyWidget({
- *    geoProvider: new HTML5GeoProvider(),
  *    clientId: window.CyberusKey.CLIENT_ID,
  *    redirectUri: window.CyberusKey.REDIRECT_URI,
+ *    fullOpenIdLogin: true,
  *    state: window.CyberusKey.STATE,
  *    nonce: window.CyberusKey.NONCE
  *   });
  * 
  *   cyberusKeyButton.create('cyberus-key-widget-container');
  * });
+ * 
+ * If fullOpenIdLogin is true, then a user will be redirected to cyberuskey.com to process the login. This is the recommended configuration. If it’s false, the login process is done only on your side and you will have to e.g. handle errors.
+ * 
  * ```
  *
  * @export
@@ -243,6 +249,10 @@ export class CyberusKeyWidget {
    * @memberof CyberusKeyWidget
    */
   create(containingElementClassName: string): void {
+    if (typeof(document) === 'undefined' || typeof(window) === 'undefined') {
+      return;
+    }
+
     if (this._initialized) {
       throw new Error(`Widget is already initialized.`);
     }

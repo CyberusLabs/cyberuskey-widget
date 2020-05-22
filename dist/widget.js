@@ -7,7 +7,7 @@
 		exports["cyberuskey-widget"] = factory();
 	else
 		root["cyberuskey-widget"] = factory();
-})(window, function() {
+})(typeof(self) !== 'undefined' ? self : this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -101,6 +101,7 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MissingRedirectUri = exports.OTPGenerationError = exports.ResourceNotFoundError = exports.OpenApiError = exports.WrongJsonError = exports.TooManyCallsError = exports.UnknownError = exports.CyberusKeyError = exports.ErrorCode = exports.errorFactory = void 0;
 var ErrorCode;
 (function (ErrorCode) {
     ErrorCode[ErrorCode["undefined"] = 1] = "undefined";
@@ -215,19 +216,29 @@ module.exports = g;
 
 "use strict";
 
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(3));
-__export(__webpack_require__(10));
-__export(__webpack_require__(0));
-__export(__webpack_require__(11));
-__export(__webpack_require__(12));
-__export(__webpack_require__(4));
-__export(__webpack_require__(5));
-__export(__webpack_require__(13));
-__export(__webpack_require__(14));
+__exportStar(__webpack_require__(3), exports);
+__exportStar(__webpack_require__(10), exports);
+__exportStar(__webpack_require__(11), exports);
+__exportStar(__webpack_require__(0), exports);
+__exportStar(__webpack_require__(12), exports);
+__exportStar(__webpack_require__(13), exports);
+__exportStar(__webpack_require__(14), exports);
+__exportStar(__webpack_require__(4), exports);
+__exportStar(__webpack_require__(5), exports);
+__exportStar(__webpack_require__(15), exports);
+__exportStar(__webpack_require__(16), exports);
+__exportStar(__webpack_require__(17), exports);
 const api_1 = __webpack_require__(3);
 exports.default = api_1.CyberusKeyAPI;
 //# sourceMappingURL=index.js.map
@@ -248,6 +259,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CyberusKeyAPI = void 0;
 const errors_1 = __webpack_require__(0);
 const session_1 = __webpack_require__(4);
 /**
@@ -498,6 +510,7 @@ exports.CyberusKeyAPI = CyberusKeyAPI;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Session = void 0;
 /**
  * Data class representing a Cyberus Key session.
  *
@@ -520,6 +533,7 @@ exports.Session = Session;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Geolocation = void 0;
 /**
  * An abstraction for a taken geolocation measurement.
  *
@@ -572,6 +586,16 @@ exports.Geolocation = Geolocation;
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(setImmediate) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -581,14 +605,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CyberusKeyWidget = exports.WidgetOptions = exports.WidgetAnimation = void 0;
 const cyberuskey_sdk_1 = __webpack_require__(2);
-__webpack_require__(15);
-const widgetTemplate = __webpack_require__(22);
-__export(__webpack_require__(2));
+let widgetTemplate = '';
+if (typeof (window) !== 'undefined') {
+    __webpack_require__(18);
+    widgetTemplate = __webpack_require__(25);
+}
+__exportStar(__webpack_require__(2), exports);
 /**
  * Defines the widget animation.
  * Use one of `None`, `Blinking`, `Waves`.
@@ -709,15 +734,18 @@ exports.WidgetOptions = WidgetOptions;
  *
  * $(document).ready(() => {
  * const ckButton = new CyberusKeyWidget({
- *    geoProvider: new HTML5GeoProvider(),
  *    clientId: window.CyberusKey.CLIENT_ID,
  *    redirectUri: window.CyberusKey.REDIRECT_URI,
+ *    fullOpenIdLogin: true,
  *    state: window.CyberusKey.STATE,
  *    nonce: window.CyberusKey.NONCE
  *   });
  *
  *   cyberusKeyButton.create('cyberus-key-widget-container');
  * });
+ *
+ * If fullOpenIdLogin is true, then a user will be redirected to cyberuskey.com to process the login. This is the recommended configuration. If it’s false, the login process is done only on your side and you will have to e.g. handle errors.
+ *
  * ```
  *
  * @export
@@ -764,6 +792,9 @@ class CyberusKeyWidget {
      * @memberof CyberusKeyWidget
      */
     create(containingElementClassName) {
+        if (typeof (document) === 'undefined' || typeof (window) === 'undefined') {
+            return;
+        }
         if (this._initialized) {
             throw new Error(`Widget is already initialized.`);
         }
@@ -1367,6 +1398,15 @@ process.umask = function() { return 0; };
 
 "use strict";
 
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=soundEmitter.js.map
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1377,6 +1417,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.WebAudioSoundEmitter = void 0;
 const errors_1 = __webpack_require__(0);
 /**
  * Class uses a HTML5's AudioContext interface to play a sound.
@@ -1418,7 +1459,16 @@ exports.WebAudioSoundEmitter = WebAudioSoundEmitter;
 //# sourceMappingURL=webAudioSoundEmitter.js.map
 
 /***/ }),
-/* 11 */
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=navigator.js.map
+
+/***/ }),
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1433,6 +1483,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.RedirectNavigator = void 0;
 const errors_1 = __webpack_require__(0);
 /**
  * Class describes how OpenID's Authentication Endpoint will be handled.
@@ -1467,12 +1518,13 @@ exports.RedirectNavigator = RedirectNavigator;
 //# sourceMappingURL=redirectNavigator.js.map
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.OpenIdScopeParser = void 0;
 /**
  * Handy class to define an OpenID's scope.
  * Scopes are used by an application during authentication to authorize access to a user's details,
@@ -1532,7 +1584,16 @@ exports.OpenIdScopeParser = OpenIdScopeParser;
 //# sourceMappingURL=scopeParser.js.map
 
 /***/ }),
-/* 13 */
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=geoProvider.js.map
+
+/***/ }),
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1547,6 +1608,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.HTML5GeoProvider = void 0;
 const geo_1 = __webpack_require__(5);
 /**
  * Class provides a geolocalization measurement.
@@ -1599,12 +1661,13 @@ exports.HTML5GeoProvider = HTML5GeoProvider;
 //# sourceMappingURL=html5GeoProvider.js.map
 
 /***/ }),
-/* 14 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.LoginOptions = void 0;
 /**
  * Login options.
  *
@@ -1650,11 +1713,11 @@ exports.LoginOptions = LoginOptions;
 //# sourceMappingURL=loginOptions.js.map
 
 /***/ }),
-/* 15 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var api = __webpack_require__(16);
-            var content = __webpack_require__(17);
+var api = __webpack_require__(19);
+            var content = __webpack_require__(20);
 
             content = content.__esModule ? content.default : content;
 
@@ -1669,14 +1732,12 @@ options.singleton = false;
 
 var update = api(content, options);
 
-var exported = content.locals ? content.locals : {};
 
 
-
-module.exports = exported;
+module.exports = content.locals || {};
 
 /***/ }),
-/* 16 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1951,14 +2012,14 @@ module.exports = function (list, options) {
 };
 
 /***/ }),
-/* 17 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Imports
-var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(18);
-var ___CSS_LOADER_GET_URL_IMPORT___ = __webpack_require__(19);
-var ___CSS_LOADER_URL_IMPORT_0___ = __webpack_require__(20);
-var ___CSS_LOADER_URL_IMPORT_1___ = __webpack_require__(21);
+var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(21);
+var ___CSS_LOADER_GET_URL_IMPORT___ = __webpack_require__(22);
+var ___CSS_LOADER_URL_IMPORT_0___ = __webpack_require__(23);
+var ___CSS_LOADER_URL_IMPORT_1___ = __webpack_require__(24);
 exports = ___CSS_LOADER_API_IMPORT___(false);
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = ___CSS_LOADER_GET_URL_IMPORT___(___CSS_LOADER_URL_IMPORT_0___);
 var ___CSS_LOADER_URL_REPLACEMENT_1___ = ___CSS_LOADER_GET_URL_IMPORT___(___CSS_LOADER_URL_IMPORT_1___);
@@ -1969,7 +2030,7 @@ module.exports = exports;
 
 
 /***/ }),
-/* 18 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2069,7 +2130,7 @@ function toComment(sourceMap) {
 }
 
 /***/ }),
-/* 19 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2109,19 +2170,19 @@ module.exports = function (url, options) {
 };
 
 /***/ }),
-/* 20 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M36.3,28.2a6.1,6.1,0,0,1-12.2,0,6.1,6.1,0,0,1,12.2,0Zm11,0h-11m8.6,0v4.7M17.7,48.2A23.1,23.1,0,0,1,6.8,28.7a23.2,23.2,0,0,1,13.9-21m20.4,7.4A18,18,0,0,0,30,11.3,17.6,17.6,0,0,0,12.2,28.8,17.6,17.6,0,0,0,30,46.2a17.3,17.3,0,0,0,8.5-2.1m-4.2-27a13.4,13.4,0,0,0-4-.6A12.4,12.4,0,0,0,17.7,28.8a12.2,12.2,0,0,0,2.3,7' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
 
 /***/ }),
-/* 21 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56.7 56.7'%3E%3Ctitle%3Ecyberus_buttony_login_icon%3C/title%3E%3Cpath d='M19.1,49.9A24.8,24.8,0,0,1,22.3,6m22,8A19.1,19.1,0,1,0,32.4,47.8a18.6,18.6,0,0,0,9.1-2.3M37,16.2a16.2,16.2,0,0,0-4.4-.7,13.4,13.4,0,0,0-11.1,21M34.8,22.6a7.8,7.8,0,0,0-2.2-.3,6.7,6.7,0,0,0,0,13.4,7.8,7.8,0,0,0,2.2-.3M25.9,29h8.9' style='fill:none;stroke:%23fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:1.5px'/%3E%3C/svg%3E"
 
 /***/ }),
-/* 22 */
+/* 25 */
 /***/ (function(module, exports) {
 
 // Module
