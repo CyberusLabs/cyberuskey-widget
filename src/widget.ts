@@ -75,7 +75,7 @@ export class WidgetOptions {
      * @type {string}
      * @memberof WidgetOptions
      */
-    readonly serverUrl: string = 'https://production-api.cyberuskey.com';
+    readonly serverUrl: string = 'https://api.cyberuskey.com';
 
     /**
      * @param {OpenIdScopeParser} scope Each scope returns a set of user attributes, which are called claims.
@@ -223,7 +223,7 @@ export class CyberusKeyWidget {
         }
 
         let theme = options.theme || 'default';
-        const serverUrl = options.serverUrl || 'https://production-api.cyberuskey.com';
+        const serverUrl = options.serverUrl || 'https://api.cyberuskey.com';
         const animation = options.animation || WidgetAnimation.Blinking;
 
         if (!['default', 'eliot'].includes(theme)) {
