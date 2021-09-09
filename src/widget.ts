@@ -199,7 +199,6 @@ export class CyberusKeyWidget {
     private _clientId: string;
     private _redirectUri: string;
     private _scope: OpenIdScopeParser;
-    private _geoProvider: GeoProvider
     private _state: string;
     private _nonce: string;
     private _initialized: boolean;
@@ -210,6 +209,8 @@ export class CyberusKeyWidget {
     private _origin: string;
     private _autoplay: boolean;
     private _fullOpenIdLogin: boolean;
+    private _audio: any;
+    private _api: CyberusKeyAPI
 
     /**
      * Creates an instance of CyberusKeyWidget.
@@ -235,7 +236,7 @@ export class CyberusKeyWidget {
         this._clientId = options.clientId;
         this._redirectUri = options.redirectUri;
         this._scope = options.scope || (new OpenIdScopeParser()).addEmail();
-        this._geoProvider = options.geoProvider;
+
         this._state = options.state;
         this._nonce = options.nonce;
         this._responseType = options.responseType || 'code';
@@ -247,6 +248,8 @@ export class CyberusKeyWidget {
         this._origin = options.origin;
         this._autoplay = options.autoplay;
         this._fullOpenIdLogin = options.fullOpenIdLogin;
+        this._audio = new Audio()
+        this._api = new CyberusKeyAPI(this._serverUrl.href, options.geoProvider);
     }
 
     /**
@@ -272,6 +275,15 @@ export class CyberusKeyWidget {
 
         this._createButton(widgetHtml, containingElementClassName);
 
+
+        this._api.isOutOfService()
+            .then((isOutOfService) => {
+                if (isOutOfService) {
+                    this._disable();
+                    throw new Error('The authentication server is currently not available.');
+                }
+            })
+
         this._initialized = true;
     }
 
@@ -282,10 +294,10 @@ export class CyberusKeyWidget {
 
         this._inProgress = true;
         this._loading();
-        this._disable()
+        this._disable();
+        const api = this._api;
+        const audio = this._audio
 
-        const audio = new Audio()
-        const api = new CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
         api.createSession(this._clientId, this._origin)
             .then(async (sessionId) => {
                 api.getOTPSound(sessionId).then(async (soundUrl) => {
@@ -319,7 +331,7 @@ export class CyberusKeyWidget {
 
     _navigateAuthentication(api: CyberusKeyAPI, sessionId: string) {
 
-        const scope = new OpenIdScopeParser().addEmail().addProfile();
+        const scope = this._scope;
 
         return api.navigateAuthentication(
             this._clientId,
@@ -340,10 +352,8 @@ export class CyberusKeyWidget {
 
         this._inProgress = true;
 
-        const api = new CyberusKeyAPI(this._serverUrl.href, this._geoProvider);
-
         try {
-            await api.loginThroughCyberusKeyDashboard({
+            await this._api.loginThroughCyberusKeyDashboard({
                 clientId: this._clientId,
                 redirectUri: this._redirectUri,
                 scope: this._scope,
