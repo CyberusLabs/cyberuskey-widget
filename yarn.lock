@@ -1991,8 +1991,10 @@ currently-unhandled@^0.4.1:
   dependencies:
     array-find-index "^1.0.1"
 
-"cyberuskey-sdk@file:../cyberuskey-sdk":
-  version "0.0.15"
+cyberuskey-sdk@0.0.16:
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/cyberuskey-sdk/-/cyberuskey-sdk-0.0.16.tgz#221239b6610a251bb6ec16f9a4d7396ebdc664eb"
+  integrity sha512-4gx9gBNy8RlIevfI6buWQlf+2uaYre41fZRBQR7dGsh3ZV0AUlKhH5e9nE3D2aALzBRG4DMNQ9XUm6NxsMzV8g==
 
 cyclist@^1.0.1:
   version "1.0.1"
@@ -3683,9 +3685,9 @@ minimatch@^3.0.4, minimatch@~3.0.2:
     brace-expansion "^1.1.7"
 
 minimist@^1.1.3, minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.npmjs.org/minimist/-/minimist-1.2.5.tgz"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 minipass-collect@^1.0.2:
   version "1.0.2"
