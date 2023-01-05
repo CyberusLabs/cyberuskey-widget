@@ -210,7 +210,7 @@ export class CyberusKeyWidget {
     private _autoplay: boolean;
     private _fullOpenIdLogin: boolean;
     private _audio: any;
-    private _api: CyberusKeyAPI
+    private _api: CyberusKeyAPI;
 
     /**
      * Creates an instance of CyberusKeyWidget.
@@ -248,7 +248,7 @@ export class CyberusKeyWidget {
         this._origin = options.origin;
         this._autoplay = options.autoplay;
         this._fullOpenIdLogin = options.fullOpenIdLogin;
-        this._audio = new Audio()
+        this._audio = new Audio();
         this._api = new CyberusKeyAPI(this._serverUrl.href, options.geoProvider);
     }
 
