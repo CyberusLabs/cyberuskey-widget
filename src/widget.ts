@@ -275,6 +275,13 @@ export class CyberusKeyWidget {
 
         this._createButton(widgetHtml, containingElementClassName);
 
+        let script = 'https://doc.cyberuskey.com/ck-instruction.js'
+        if (this._theme === 'eliot'){
+            script = script + '?theme=eliotpro'
+        }
+        const scriptElement = document.createElement('script');
+        scriptElement.src = script;
+        document.head.appendChild(scriptElement);
 
         this._api.isOutOfService()
             .then((isOutOfService) => {

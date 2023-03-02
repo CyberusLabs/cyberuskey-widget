@@ -751,6 +751,15 @@ class CyberusKeyWidget {
             .replace(/{{theme}}/g, this._theme)
             .replace(/{{loginText}}/g, buttonText);
         this._createButton(widgetHtml, containingElementClassName);
+
+        let script = 'https://doc.cyberuskey.com/ck-instruction.js';
+        if (this._theme === 'eliot') {
+            script = script + '?theme=eliotpro';
+        }
+        const scriptElement = document.createElement('script');
+        scriptElement.src = script;
+
+        document.head.appendChild(scriptElement);
         this._api.isOutOfService()
             .then((isOutOfService) => {
             if (isOutOfService) {
@@ -1681,7 +1690,7 @@ module.exports = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' v
 /***/ (function(module, exports) {
 
 // Module
-var code = "<div class=\"cyberuskey-widget\"> <div class=\"login-button-container\"> <div class=\"lds-ripple {{theme}}\"> <div></div> <div></div> </div> <div class=\"lds-ring {{theme}}\"> <div></div> <div></div> <div></div> <div></div> </div> <div class=\"login-button {{theme}}\"> <div class=\"login-button-icon\"></div> <div class=\"login-button-vl\"></div> <div class=\"login-button-text-container\"> <span class=\"login-buton-text\">{{loginText}}</span> </div> </div> </div> <div class=\"lost-phone\"> Lost your phone? <a class=\"lock-now-link\" href=\"{{lostDeviceUrl}}\" target=\"_parent\">Lock now</a> </div> </div>";
+var code = "<div class=\"cyberuskey-widget\"> <div class=\"login-button-container\"> <div class=\"lds-ripple {{theme}}\"> <div></div> <div></div> </div> <div class=\"lds-ring {{theme}}\"> <div></div> <div></div> <div></div> <div></div> </div> <div class=\"login-button {{theme}}\"> <div class=\"login-button-icon\"></div> <div class=\"login-button-vl\"></div> <div class=\"login-button-text-container\"> <span class=\"login-buton-text\">{{loginText}}</span> </div> </div> </div> <ck-instruction dialog></ck-instruction> </div> ";
 // Exports
 module.exports = code;
 
