@@ -13,7 +13,6 @@ if (typeof(window) !== 'undefined') {
   widgetTemplate = require("./templates/widget.html");
 }
 
-
 export * from 'cyberuskey-sdk';
 
 /**
@@ -307,26 +306,27 @@ export class CyberusKeyWidget {
 
         api.createSession(this._clientId, this._origin)
             .then(async (sessionId) => {
-                api.getOTPSound(sessionId).then(async (soundUrl) => {
-                    this._stopLoading();
-                    this._animate()
-                    audio.src = soundUrl;
-                    try {
-                        await audio.play()
-                        await this._navigateAuthentication(api, sessionId)
-                        setTimeout(() => this.stopTheButton(), 10000)
+                const { otpUrl, pianoUrl } = await api.getOTPSoundBackground(sessionId);
 
-                    } catch (err) {
-                        this.stopTheButton();
-                        throw err;
-                    }
+                this._stopLoading();
+                this._animate();
 
-                })
-            })
-            .catch((err) => {
-                this.stopTheButton();
-                throw err;
-            })
+                const otpAudio = new Audio(otpUrl);
+                const pianoAudio = new Audio(pianoUrl);
+
+                try {
+                    // Sync playback
+                    await Promise.all([otpAudio.play(), pianoAudio.play()]);
+
+                    await this._navigateAuthentication(api, sessionId);
+                    setTimeout(() => this.stopTheButton(), 10000);
+
+                } catch (err) {
+                    this.stopTheButton();
+                    throw err;
+                }
+            });
+
     }
 
     private stopTheButton() {

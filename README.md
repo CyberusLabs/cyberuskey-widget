@@ -72,6 +72,17 @@ Widget uses Cyberus Key JavaScript SDK, here you have the [documentation](https:
 <dd></dd>
 </dl>
 
+## Members
+
+<dl>
+<dt><a href="#WidgetAnimation[undefined]">WidgetAnimation[undefined]</a></dt>
+<dd><p>No animation.</p></dd>
+<dt><a href="#WidgetAnimation[undefined]">WidgetAnimation[undefined]</a></dt>
+<dd><p>Logo is blinking.</p></dd>
+<dt><a href="#WidgetAnimation[undefined]">WidgetAnimation[undefined]</a></dt>
+<dd><p>Logo &quot;emits&quot; the waves.</p></dd>
+</dl>
+
 <a name="WidgetOptions"></a>
 
 ## WidgetOptions
@@ -221,6 +232,24 @@ If fullOpenIdLogin is true, then a user will be redirected to cyberuskey.com to 
 | --- | --- |
 | options | [<code>WidgetOptions</code>](#WidgetOptions) | 
 
+<a name="WidgetAnimation[undefined]"></a>
+
+## WidgetAnimation[undefined]
+<p>No animation.</p>
+
+**Kind**: global variable  
+<a name="WidgetAnimation[undefined]"></a>
+
+## WidgetAnimation[undefined]
+<p>Logo is blinking.</p>
+
+**Kind**: global variable  
+<a name="WidgetAnimation[undefined]"></a>
+
+## WidgetAnimation[undefined]
+<p>Logo &quot;emits&quot; the waves.</p>
+
+**Kind**: global variable  
 <a name="WidgetAnimation"></a>
 
 ## WidgetAnimation : <code>enum</code>
